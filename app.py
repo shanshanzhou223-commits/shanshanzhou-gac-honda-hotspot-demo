@@ -458,8 +458,8 @@ def generate_compact_tag_cloud(platform: str, topics: list) -> str:
         flex-wrap: wrap;
         justify-content: center;
         align-content: center;
-        gap: 2px;
-        padding: 16px;
+        gap: 5px;
+        padding: 12px;
         line-height: 1.3;
         max-width: 100%;
         border-radius: 12px;
@@ -589,14 +589,17 @@ with tab2:
         components.html(tag_cloud_html, height=420, scrolling=True)
 
     with legend_col:
-        st.markdown("**🏆 热度排行 Top5**")
+        st.markdown("### 🏆 热度排行 Top5")
         for i, t in enumerate(wc_topics[:5]):
             rank_emoji = {0: "🥇", 1: "🥈", 2: "🥉"}.get(i, f"{i + 1}.")
-            st.markdown(f"{rank_emoji} `{t['topic']}` · 🔥{t['heat']}")
+            st.markdown(
+                f"<div style='font-size:17px;line-height:1.6;'>"
+                f"{rank_emoji} <b>{t['topic']}</b> · 🔥{t['heat']}"
+                f"</div>",
+                unsafe_allow_html=True,
+            )
 
-    st.divider()
-
-    # 板块二：每条话题的 B库六维雷达图拆解
+    # 板块二：各平台热点 B库六维标签拆解（紧跟词云下方，减少间隔）
     st.markdown("### 2️⃣ 各平台热点 B库六维标签拆解")
     st.markdown("下方按平台直接展示每条热点的 B库六维标签与雷达图，无需点击展开。")
 
