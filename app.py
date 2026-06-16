@@ -525,42 +525,6 @@ with tab2:
                             key=f"topic_radar_{platform}_{idx}",
                         )
 
-                    # 内容演绎：为每条热点生成可直接落地的内容方案
-                    with st.expander("💡 查看内容演绎方案（视频脚本 + 平台文案 + 视觉建议）"):
-                        playbook = generate_topic_playbook(t)
-                        rec_vehicle = playbook["推荐车型"]
-                        st.markdown(
-                            f"**推荐承接车型**：🏎️ `{VEHICLES[rec_vehicle]['name']}`"
-                        )
-
-                        st.markdown("##### 🎬 视频分镜脚本")
-                        script_df = pd.DataFrame(playbook["视频脚本"])
-                        st.dataframe(
-                            script_df,
-                            use_container_width=True,
-                            hide_index=True,
-                            column_order=["时长", "镜号", "画面", "台词/字幕", "音效"],
-                        )
-
-                        st.markdown("##### 📝 三平台发布文案")
-                        copy_df = pd.DataFrame(playbook["平台文案"])
-                        st.dataframe(
-                            copy_df,
-                            use_container_width=True,
-                            hide_index=True,
-                        )
-
-                        st.markdown("##### 🎨 配图 / 视觉建议")
-                        visual = playbook["视觉建议"]
-                        st.markdown(f"- **主视觉风格**：{visual['主视觉风格']}")
-                        st.markdown(f"- **推荐配色**：{visual['推荐配色']}")
-                        st.markdown("- **画面元素**：")
-                        for elem in visual["画面元素"]:
-                            st.markdown(f"  - {elem}")
-                        st.markdown("- **拍摄/设计建议**：")
-                        for tip in visual["拍摄/设计建议"]:
-                            st.markdown(f"  - {tip}")
-
     with st.expander("B库六维标签说明"):
         dim_df = pd.DataFrame(
             [(k, ", ".join(v)) for k, v in TOPIC_DIMENSIONS.items()],
