@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
-from PIL import Image, ImageDraw
+from PIL import Image
 from wordcloud import WordCloud
 
 from data import (
@@ -245,27 +245,6 @@ def draw_topic_radar(topic: dict):
     return fig
 
 
-def _create_cloud_mask(width: int = 800, height: int = 800) -> np.ndarray:
-    """用多个圆叠加生成一朵不规则云状 mask，让词云沿云形紧密填充"""
-    mask = Image.new("L", (width, height), 0)
-    draw = ImageDraw.Draw(mask)
-    cx, cy = width // 2, height // 2
-    # 云团主体：中心大圆 + 四周小圆叠加
-    blobs = [
-        (cx, cy, 340),
-        (cx - 180, cy - 60, 200),
-        (cx + 190, cy - 50, 190),
-        (cx - 120, cy + 150, 180),
-        (cx + 130, cy + 140, 175),
-        (cx - 220, cy + 80, 130),
-        (cx + 230, cy + 70, 125),
-        (cx, cy - 200, 150),
-    ]
-    for x, y, r in blobs:
-        draw.ellipse([x - r, y - r, x + r, y + r], fill=255)
-    return np.array(mask)
-
-
 def generate_wordcloud(platform: str, topics: list) -> io.BytesIO:
     """根据平台热点生成词云：热点句子与关键词沿云形紧密排列，整体呈一朵云"""
 
@@ -368,20 +347,19 @@ def generate_wordcloud(platform: str, topics: list) -> io.BytesIO:
         st.warning("未找到中文字体，词云可能显示为方框。")
         font_path = None
 
-    mask = _create_cloud_mask(800, 800)
-
+    # 不用 mask，让 WordCloud 在整个正方形画布上自由、均匀、紧密填充，
+    # 避免出现中间空一大块的情况。
     wc = WordCloud(
         font_path=font_path,
         width=800,
         height=800,
-        mask=mask,
         background_color="white",
         colormap="Oranges",
-        max_words=800,
-        prefer_horizontal=0.95,
-        relative_scaling=0.15,
+        max_words=1000,
+        prefer_horizontal=0.92,
+        relative_scaling=0.22,
         min_font_size=2,
-        max_font_size=18,
+        max_font_size=16,
         margin=0,
         random_state=42,
     ).generate_from_frequencies(frequencies)
