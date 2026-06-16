@@ -1,0 +1,20 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Streamlit secrets
+.secrets.toml
+
+# IDE
+.vscode/
+.idea/
+
+# Local outputs
+*.log
