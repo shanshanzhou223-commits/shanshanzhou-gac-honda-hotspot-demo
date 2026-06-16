@@ -4,6 +4,7 @@
 """
 import io
 import os
+import urllib.request
 
 import jieba
 import matplotlib.pyplot as plt
@@ -322,17 +323,50 @@ def generate_wordcloud(platform: str, topics: list) -> io.BytesIO:
             if label:
                 frequencies[label] = frequencies.get(label, 0) + heat * weight
 
-    # 查找可用中文字体
+    # 查找可用中文字体：优先系统字体，其次项目内缓存，最后从网络下载
     font_path = None
     for path in [
         "/System/Library/Fonts/PingFang.ttc",
         "/System/Library/Fonts/Hiragino Sans GB.ttc",
         "/System/Library/Fonts/STHeiti Medium.ttc",
         "/Library/Fonts/Arial Unicode.ttf",
+        "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",
+        "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc",
+        "NotoSansCJKsc-Regular.otf",
+        "wqy-microhei.ttc",
     ]:
         if os.path.exists(path):
             font_path = path
             break
+
+    # 如果都没有，下载一个开源中文字体到项目目录
+    if font_path is None:
+        local_font = "NotoSansCJKsc-Regular.otf"
+        if not os.path.exists(local_font):
+            try:
+                font_url = (
+                    "https://github.com/notofonts/noto-cjk/raw/main/Sans/OTF/"
+                    "SimplifiedChinese/NotoSansCJKsc-Regular.otf"
+                )
+                urllib.request.urlretrieve(font_url, local_font)
+            except Exception:
+                # 备用：文泉驿微米体
+                local_font = "wqy-microhei.ttc"
+                if not os.path.exists(local_font):
+                    try:
+                        font_url = (
+                            "https://github.com/larryli/PacificFont/raw/master/"
+                            "wqy-microhei.ttc"
+                        )
+                        urllib.request.urlretrieve(font_url, local_font)
+                    except Exception:
+                        local_font = None
+        if local_font and os.path.exists(local_font):
+            font_path = local_font
+
+    if font_path is None:
+        st.warning("未找到中文字体，词云可能显示为方框。")
+        font_path = None
 
     mask = _create_cloud_mask(800, 800)
 

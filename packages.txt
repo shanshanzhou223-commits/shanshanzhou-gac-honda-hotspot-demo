@@ -1,0 +1,5 @@
+build-essential
+libfreetype6-dev
+libpng-dev
+libjpeg-dev
+pkg-config

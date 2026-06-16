@@ -454,3 +454,17 @@ def rank_all_topics(
         results.append(result)
     results.sort(key=lambda x: x["full_score"], reverse=True)
     return results
+
+
+def rank_all_vehicles(
+    topic: Dict,
+    brand_fit_override: float = None,
+    auto_external: bool = False,
+) -> List[Dict]:
+    """对单个热点，计算所有车型得分并排序"""
+    results = [
+        compute_full_score(topic, vk, brand_fit_override, auto_external)
+        for vk in VEHICLES.keys()
+    ]
+    results.sort(key=lambda x: x["full_score"], reverse=True)
+    return results
