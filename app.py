@@ -374,6 +374,44 @@ def generate_wordcloud(platform: str, topics: list) -> io.BytesIO:
     plt.close(fig)
     return buf
 
+
+def render_content_playbook(topic: dict, vehicle_key: str, title: str = "内容演绎方案"):
+    """渲染完整的内容演绎模块：视频脚本 + 平台文案 + 视觉建议"""
+    playbook = generate_topic_playbook(topic, vehicle_key)
+    v = VEHICLES[vehicle_key]
+
+    st.markdown(f"**{title}** — 承接车型：`{v['name']}`")
+
+    with st.expander("🎬 查看视频分镜脚本"):
+        script_df = pd.DataFrame(playbook["视频脚本"])
+        st.dataframe(
+            script_df,
+            use_container_width=True,
+            hide_index=True,
+            column_order=["时长", "镜号", "画面", "台词/字幕", "音效"],
+        )
+
+    with st.expander("📝 查看三平台发布文案"):
+        copy_df = pd.DataFrame(playbook["平台文案"])
+        st.dataframe(
+            copy_df,
+            use_container_width=True,
+            hide_index=True,
+        )
+
+    with st.expander("🎨 查看配图 / 视觉建议"):
+        visual = playbook["视觉建议"]
+        st.markdown(f"- **主视觉风格**：{visual['主视觉风格']}")
+        st.markdown(f"- **推荐配色**：{visual['推荐配色']}")
+        st.markdown("- **画面元素**：")
+        for elem in visual["画面元素"]:
+            st.markdown(f"  - {elem}")
+        st.markdown("- **拍摄/设计建议**：")
+        for tip in visual["拍摄/设计建议"]:
+            st.markdown(f"  - {tip}")
+        st.info("💡 图片生成能力后续可接入 AI 绘图工具；当前先以文字版视觉方案呈现。")
+
+
 tab1, tab2, tab3, tab4 = st.tabs(
     ["🏠 车型标签库", "🔥 平台热点池", "🎯 单热点全车型匹配", "📐 评分逻辑"]
 )
@@ -726,7 +764,7 @@ with tab3:
             )
             st.bar_chart(sub_df.set_index("维度"))
 
-            # 4. 内容角度（仅非风险热点才生成）
+            # 4. 内容角度 + 深度演绎（仅非风险热点才生成）
             if labels.get("品牌安全等级") != "风险":
                 st.markdown("**💡 建议内容角度**")
                 angles = generate_content_angles(
@@ -744,6 +782,14 @@ with tab3:
                     ]
                 )
                 st.dataframe(angle_df, use_container_width=True, hide_index=True)
+
+                # 深度内容演绎：视频脚本 + 平台文案 + 视觉建议
+                topic_for_playbook = {"topic": topic_text, **labels}
+                render_content_playbook(
+                    topic_for_playbook,
+                    top1["vehicle"],
+                    title="🎬 深度内容演绎方案（视频脚本 / 平台文案 / 配图建议）",
+                )
 
                 # 再给出 TOP2 的角度（如果与 TOP1 同 tier 或分数接近）
                 if len(rankings) >= 2 and rankings[1]["full_score"] >= top1["full_score"] - 8:
@@ -860,7 +906,7 @@ with tab3:
             )
             st.plotly_chart(fig, use_container_width=True)
 
-            # 内容角度建议
+            # 内容角度 + 深度演绎
             if top_topic["safety"] >= 30:
                 st.markdown("**💡 建议内容角度**")
                 # 构造 labels
@@ -876,6 +922,13 @@ with tab3:
                 )
                 for i, a in enumerate(angles):
                     st.markdown(f"{i + 1}. **{a['type']}（{a['platform']}）**：{a['angle']}")
+
+                # 深度内容演绎：视频脚本 + 平台文案 + 视觉建议
+                render_content_playbook(
+                    top_topic_labels,
+                    selected_vehicle,
+                    title="🎬 深度内容演绎方案（视频脚本 / 平台文案 / 配图建议）",
+                )
 
             # 全部热点明细（展开）
             st.divider()
