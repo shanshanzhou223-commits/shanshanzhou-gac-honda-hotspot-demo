@@ -586,14 +586,14 @@ with tab2:
         )
         wc_topics = PLATFORM_TOPICS[selected_platform]
         tag_cloud_html = generate_compact_tag_cloud(selected_platform, wc_topics)
-        components.html(tag_cloud_html, height=420, scrolling=True)
+        components.html(tag_cloud_html, height=320, scrolling=True)
 
     with legend_col:
         st.markdown("### 🏆 热度排行 Top5")
         for i, t in enumerate(wc_topics[:5]):
             rank_emoji = {0: "🥇", 1: "🥈", 2: "🥉"}.get(i, f"{i + 1}.")
             st.markdown(
-                f"<div style='font-size:17px;line-height:1.6;'>"
+                f"<div style='font-size:17px;line-height:2.4;margin-bottom:8px;'>"
                 f"{rank_emoji} <b>{t['topic']}</b> · 🔥{t['heat']}"
                 f"</div>",
                 unsafe_allow_html=True,
@@ -601,7 +601,7 @@ with tab2:
 
     # 板块二：各平台热点 B库六维标签拆解（紧跟词云下方，减少间隔）
     st.markdown("### 2️⃣ 各平台热点 B库六维标签拆解")
-    st.markdown("下方按平台直接展示每条热点的 B库六维标签与雷达图，无需点击展开。")
+    st.caption("下方按平台直接展示每条热点的 B库六维标签与雷达图，无需点击展开。")
 
     platform_tabs = st.tabs(PLATFORMS)
     for platform, ptab in zip(PLATFORMS, platform_tabs):
