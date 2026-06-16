@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
+import streamlit.components.v1 as components
 from PIL import Image
 from wordcloud import WordCloud
 
@@ -384,6 +385,112 @@ def generate_wordcloud(platform: str, topics: list) -> io.BytesIO:
     return buf_crop
 
 
+def generate_compact_tag_cloud(platform: str, topics: list) -> str:
+    """用 HTML+CSS 生成一个紧凑的方形标签云，词与词之间只留极小间隙"""
+    # 按热度降序，让大词排在前面
+    sorted_topics = sorted(topics, key=lambda x: x["heat"], reverse=True)
+
+    def _heat_to_size(heat: int) -> int:
+        """热度映射到字号：热度 60-100 对应 13-32px"""
+        return int(13 + (heat - 60) / 40 * 19) if heat >= 60 else 12
+
+    def _heat_to_color(heat: int) -> str:
+        """热度映射到橙色深浅：热度越高颜色越深"""
+        if heat >= 90:
+            return "#D35400"  # 深橙
+        elif heat >= 80:
+            return "#E67E22"
+        elif heat >= 70:
+            return "#F39C12"
+        elif heat >= 60:
+            return "#F5B041"
+        else:
+            return "#F8C471"  # 浅橙
+
+    tags = []
+    for t in sorted_topics:
+        topic = t["topic"]
+        heat = t["heat"]
+        size = _heat_to_size(heat)
+        color = _heat_to_color(heat)
+        # 对话题做 HTML 转义，避免特殊字符破坏页面
+        safe_topic = topic.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        tags.append(
+            f'<span class="tag" style="font-size:{size}px;background-color:{color};" '
+            f'title="热度 {heat}">{safe_topic}</span>'
+        )
+
+    # 加入一些分词关键词和 B库标签作为填充，让云更饱满
+    fillers = []
+    for t in sorted_topics:
+        heat = t["heat"]
+        # 分词
+        words = jieba.lcut(t["topic"])
+        for w in words:
+            w = w.strip()
+            if len(w) >= 2:
+                fillers.append((w, heat * 0.5))
+        # B库标签
+        for dim in ["领域/主题域", "叙事原型", "价值观/情绪", "目标人群重合度"]:
+            label = t.get(dim)
+            if label:
+                fillers.append((label, heat * 0.35))
+
+    # 去重并按热度排序，只保留部分填充词避免过多
+    filler_dict = {}
+    for text, h in fillers:
+        filler_dict[text] = max(filler_dict.get(text, 0), h)
+    sorted_fillers = sorted(filler_dict.items(), key=lambda x: x[1], reverse=True)
+
+    for text, h in sorted_fillers[:40]:
+        size = int(11 + (h - 30) / 70 * 8) if h > 30 else 10
+        color = "#FAD7A0"  # 填充词用更浅的橙色
+        safe_text = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        tags.append(
+            f'<span class="tag filler" style="font-size:{size}px;background-color:{color};color:#D35400;" '
+            f'title="热度 {int(h)}">{safe_text}</span>'
+        )
+
+    html = f"""
+    <style>
+    .compact-tag-cloud {{
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-content: center;
+        gap: 2px;
+        padding: 16px;
+        line-height: 1.3;
+        max-width: 100%;
+        border-radius: 12px;
+        background: #fff;
+    }}
+    .compact-tag-cloud .tag {{
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 6px;
+        color: #fff;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", sans-serif;
+        font-weight: 500;
+        white-space: nowrap;
+        transition: transform 0.15s ease;
+    }}
+    .compact-tag-cloud .tag:hover {{
+        transform: scale(1.08);
+        z-index: 10;
+        box-shadow: 0 2px 8px rgba(211, 84, 0, 0.25);
+    }}
+    .compact-tag-cloud .filler {{
+        font-weight: 400;
+    }}
+    </style>
+    <div class="compact-tag-cloud">
+        {''.join(tags)}
+    </div>
+    """
+    return html
+
+
 def render_content_playbook(topic: dict, vehicle_key: str, title: str = "内容演绎方案"):
     """渲染完整的内容演绎模块：视频脚本 + 平台文案 + 视觉建议"""
     playbook = generate_topic_playbook(topic, vehicle_key)
@@ -478,8 +585,8 @@ with tab2:
             key="wordcloud_platform",
         )
         wc_topics = PLATFORM_TOPICS[selected_platform]
-        img_buf = generate_wordcloud(selected_platform, wc_topics)
-        st.image(img_buf, use_container_width=True)
+        tag_cloud_html = generate_compact_tag_cloud(selected_platform, wc_topics)
+        components.html(tag_cloud_html, height=420, scrolling=True)
 
     with legend_col:
         st.markdown("**🏆 热度排行 Top5**")
