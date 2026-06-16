@@ -278,25 +278,25 @@ def generate_wordcloud(platform: str, topics: list) -> io.BytesIO:
         topic = t["topic"]
         heat = t["heat"]
 
-        # 完整话题作为词云中的词，但权重降低，避免字号差异过大
-        frequencies[topic] = frequencies.get(topic, 0) + heat * 0.35
+        # 完整话题作为词云中的核心词，权重适中
+        frequencies[topic] = frequencies.get(topic, 0) + heat * 0.40
 
         # 分词后的关键词作为填充，让词云更密
         words = jieba.lcut(topic)
         for w in words:
             w = w.strip()
             if len(w) >= 2 and w not in stopwords:
-                frequencies[w] = frequencies.get(w, 0) + heat * 0.45
+                frequencies[w] = frequencies.get(w, 0) + heat * 0.55
             elif w.isalnum() and len(w) >= 2:
-                frequencies[w] = frequencies.get(w, 0) + heat * 0.45
+                frequencies[w] = frequencies.get(w, 0) + heat * 0.55
 
         # B库标签也作为辅助填充词，提升云的密度
         for dim, weight in [
-            ("领域/主题域", 0.30),
-            ("叙事原型", 0.25),
-            ("价值观/情绪", 0.20),
-            ("目标人群重合度", 0.15),
-            ("热度生命周期", 0.10),
+            ("领域/主题域", 0.35),
+            ("叙事原型", 0.30),
+            ("价值观/情绪", 0.25),
+            ("目标人群重合度", 0.20),
+            ("热度生命周期", 0.15),
         ]:
             label = t.get(dim)
             if label:
@@ -347,24 +347,24 @@ def generate_wordcloud(platform: str, topics: list) -> io.BytesIO:
         st.warning("未找到中文字体，词云可能显示为方框。")
         font_path = None
 
-    # 不用 mask，让 WordCloud 在整个正方形画布上自由、均匀、紧密填充，
-    # 避免出现中间空一大块的情况。
+    # 不用 mask，让 WordCloud 在整个正方形画布上自由、均匀、紧密填充。
+    # 通过更大的画布、更多的词、更小的字号来缩短词与词之间的距离。
     wc = WordCloud(
         font_path=font_path,
-        width=800,
-        height=800,
+        width=1000,
+        height=1000,
         background_color="white",
         colormap="Oranges",
-        max_words=1000,
-        prefer_horizontal=0.92,
-        relative_scaling=0.22,
-        min_font_size=2,
-        max_font_size=16,
+        max_words=2000,
+        prefer_horizontal=0.90,
+        relative_scaling=0.04,
+        min_font_size=1,
+        max_font_size=11,
         margin=0,
         random_state=42,
     ).generate_from_frequencies(frequencies)
 
-    fig, ax = plt.subplots(figsize=(8, 8))
+    fig, ax = plt.subplots(figsize=(10, 10))
     ax.imshow(wc, interpolation="bilinear")
     ax.axis("off")
 
@@ -372,7 +372,16 @@ def generate_wordcloud(platform: str, topics: list) -> io.BytesIO:
     plt.savefig(buf, format="png", bbox_inches="tight", pad_inches=0)
     buf.seek(0)
     plt.close(fig)
-    return buf
+
+    # 裁剪掉四周空白，让词云更紧凑地呈现
+    img = Image.open(buf).convert("RGBA")
+    bbox = img.getbbox()
+    if bbox:
+        img = img.crop(bbox)
+    buf_crop = io.BytesIO()
+    img.save(buf_crop, format="png")
+    buf_crop.seek(0)
+    return buf_crop
 
 
 def render_content_playbook(topic: dict, vehicle_key: str, title: str = "内容演绎方案"):
