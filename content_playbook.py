@@ -35,19 +35,19 @@ def _best_vehicle_for_topic(topic: Dict) -> str:
     return max(candidates.items(), key=lambda x: x[1])[0]
 
 
-def _topic_keyword(topic_text: str, max_len: int = 12) -> str:
-    """提取话题关键词"""
+def _topic_keyword(topic_text: str, max_len: int = 30) -> str:
+    """提取话题关键词，默认保留完整文本避免截断"""
     t = topic_text.strip()
     if len(t) > max_len:
         return t[:max_len] + "…"
     return t
 
 
-def generate_video_script(topic: Dict, vehicle_key: str = None) -> List[Dict]:
+def generate_video_script(topic: Dict, vehicle_key: str = None, angle: str = None) -> List[Dict]:
     """
-    生成 15s / 20s / 30s 视频分镜脚本。
+    为单个内容角度生成 15s / 20s / 30s 视频分镜脚本。
     每版均采用三段式结构：热点解读 → 车型结合 → 产品图展示，
-    并明确对应一个内容角度，分镜画面具体到景别、镜头、元素、光影。
+    分镜画面具体到景别、镜头、元素、光影。
     """
     if vehicle_key is None:
         vehicle_key = _best_vehicle_for_topic(topic)
@@ -61,32 +61,22 @@ def generate_video_script(topic: Dict, vehicle_key: str = None) -> List[Dict]:
     scene0 = v["scenes"][0] if v["scenes"] else "出行"
     positioning = v["positioning"]
 
-    # 取前 3 个内容角度，分别作为 15s / 20s / 30s 的核心创意
-    angles = generate_content_angles(
-        topic_text=topic["topic"],
-        vehicle_key=vehicle_key,
-        topic_labels=topic,
-        match_types=[],
-        top_n=3,
-    )
-    # 兜底角度
-    if len(angles) < 3:
-        default_angle = f"当{keyword}刷屏，{vehicle}用{image0}回应"
-        while len(angles) < 3:
-            angles.append(
-                {
-                    "angle": default_angle,
-                    "type": "短视频",
-                    "platform": "抖音 / 视频号",
-                    "source": "兜底",
-                }
-            )
+    # 若未传入内容角度，自动生成一个兜底角度
+    if angle is None:
+        angles = generate_content_angles(
+            topic_text=topic["topic"],
+            vehicle_key=vehicle_key,
+            topic_labels=topic,
+            match_types=[],
+            top_n=1,
+        )
+        angle = angles[0]["angle"] if angles else f"当{keyword}刷屏，{vehicle}用{image0}回应"
 
-    # 各时长三段式分镜模板
+    # 各时长三段式分镜模板（基于同一个内容角度，做不同时长版本）
     durations = [
         {
             "时长": "15秒",
-            "内容角度": angles[0]["angle"],
+            "内容角度": angle,
             "适合场景": "抖音/视频号信息流，前3秒抓眼，快速落版",
             "结构说明": "0-5秒 热点解读｜5-10秒 车型结合｜10-15秒 产品图展示",
             "acts": [
@@ -101,7 +91,7 @@ def generate_video_script(topic: Dict, vehicle_key: str = None) -> List[Dict]:
                                 f"背景使用{field}领域的代表性画面（热搜截图/新闻现场/网络素材快闪），"
                                 "色调偏冷或高饱和，制造话题感；镜头在3秒内由虚焦推至清晰。"
                             ),
-                            "台词/字幕": angles[0]["angle"],
+                            "台词/字幕": angle,
                             "音效/音乐": "强节奏鼓点入 + 社交媒体消息提示音",
                         }
                     ],
@@ -141,7 +131,7 @@ def generate_video_script(topic: Dict, vehicle_key: str = None) -> List[Dict]:
         },
         {
             "时长": "20秒",
-            "内容角度": angles[1]["angle"],
+            "内容角度": angle,
             "适合场景": "抖音/视频号/微博视频，情绪递进，留足产品展示时间",
             "结构说明": "0-6秒 热点解读｜6-13秒 车型结合｜13-20秒 产品图展示",
             "acts": [
@@ -165,7 +155,7 @@ def generate_video_script(topic: Dict, vehicle_key: str = None) -> List[Dict]:
                                 f"【中景】一位与{vehicle}目标人群气质相符的人物（车主/白领/家庭用户）"
                                 f"看着屏幕若有所思，窗外光线为{emotion}基调；镜头缓慢推近至面部特写。"
                             ),
-                            "台词/字幕": angles[1]["angle"],
+                            "台词/字幕": angle,
                             "音效/音乐": "情绪弦乐起",
                         },
                     ],
@@ -214,7 +204,7 @@ def generate_video_script(topic: Dict, vehicle_key: str = None) -> List[Dict]:
         },
         {
             "时长": "30秒",
-            "内容角度": angles[2]["angle"],
+            "内容角度": angle,
             "适合场景": "品牌官方账号、B站、视频号，完整叙事，可投流",
             "结构说明": "0-8秒 热点解读｜8-19秒 车型结合｜19-30秒 产品图展示",
             "acts": [
@@ -253,7 +243,7 @@ def generate_video_script(topic: Dict, vehicle_key: str = None) -> List[Dict]:
                                 f"【全景跟拍】{vehicle}行驶在{scene0}路线，"
                                 f"镜头与车辆同向移动；背景中隐约出现{field}符号或{keyword}关键词涂鸦/路牌。"
                             ),
-                            "台词/字幕": angles[2]["angle"],
+                            "台词/字幕": angle,
                             "音效/音乐": "情绪音乐进入副歌前奏",
                         },
                         {
@@ -337,8 +327,96 @@ def _flatten_video_script(scripts: List[Dict]) -> List[Dict]:
     return flat
 
 
+def generate_graphic_copies(topic: Dict, vehicle_key: str = None, angle: str = None) -> List[Dict]:
+    """
+    为单个图文/长图文内容角度，生成多平台发布文案。
+    覆盖：微博（短图文/thread）、知乎（讨论/回答）、微信公众号（长图文）、小红书（图文笔记）。
+    """
+    if vehicle_key is None:
+        vehicle_key = _best_vehicle_for_topic(topic)
+    v = VEHICLES.get(vehicle_key, VEHICLES["雅阁"])
+    keyword = _topic_keyword(topic["topic"])
+    narrative = topic.get("叙事原型", "")
+    emotion = topic.get("价值观/情绪", "")
+    field = topic.get("领域/主题域", "")
+    audience = topic.get("目标人群重合度", "")
+    vehicle = v["name"]
+    image0 = v["image"][0] if v["image"] else "品质"
+    scene0 = v["scenes"][0] if v["scenes"] else "出行"
+    positioning = v["positioning"]
+
+    if angle is None:
+        angle = f"从{keyword}看{vehicle}：{image0}的另一种表达"
+
+    copies = [
+        {
+            "平台": "微博",
+            "形式": "短图文 / 九宫格 thread",
+            "文案": (
+                f"【{vehicle} × {keyword}】{narrative}的另一种表达，也许就是{image0}。\n\n"
+                f"1️⃣ {keyword}刷屏，真正值得接住的是什么？\n"
+                f"2️⃣ {vehicle}的{scene0}，恰好给了这份{emotion}一个落点。\n"
+                f"3️⃣ {positioning}，不是蹭热度，是本来就这样。\n\n"
+                f"你怎么看？#{keyword}# #{vehicle_key}# #广本车型热点匹配#"
+            ),
+            "话题标签": f"#{keyword}# #{vehicle_key}# #广本车型热点匹配#",
+            "配图建议": f"九宫格：热点现场图2张 + {vehicle} {scene0}场景图5张 + 车型特写2张",
+        },
+        {
+            "平台": "知乎",
+            "形式": "回答 / 深度讨论",
+            "文案": (
+                f"如何评价「{keyword}」与{vehicle}的这次相遇？\n\n"
+                f"我的看法是：{angle}\n\n"
+                f"{keyword}本质上是一个关于{narrative}的社会情绪。{vehicle}作为{positioning}，"
+                f"它的{image0}和{scene0}天然能和这个情绪产生连接。\n\n"
+                f"对{audience}来说，{vehicle}不是追热点的工具，而是{emotion}的落点。\n\n"
+                f"你怎么看这次{field}热点与汽车品牌的结合？"
+            ),
+            "话题标签": f"#{keyword}# #{vehicle_key}# #汽车营销#",
+            "配图建议": f"信息长图1张：{keyword}时间线 + {vehicle}产品点对照；或3-5张场景图",
+        },
+        {
+            "平台": "微信公众号",
+            "形式": "长图文",
+            "文案": (
+                f"标题：{angle}\n\n"
+                f"开篇：最近，{keyword}刷屏了。有人说这是{emotion}，有人说这就是生活。\n\n"
+                f"第一部分：{keyword}为什么能火？\n"
+                f"拆解这个{field}话题背后的{narrative}情绪，以及它为何能击中{audience}。\n\n"
+                f"第二部分：{vehicle}的{image0}，如何回应这个热点？\n"
+                f"从{scene0}切入，讲{vehicle}如何不蹭热度、只讲好故事。"
+                f"结合产品卖点（{image0}、{positioning}）做价值锚定。\n\n"
+                f"第三部分：给{audience}的一句话\n"
+                f"{vehicle} × {keyword}｜{narrative}，不止于车，更是一种态度。\n\n"
+                f"结尾：引导试驾/到店/留资，附车型高清图。"
+            ),
+            "话题标签": f"广本{vehicle_key}｜{keyword}｜{emotion}出行",
+            "配图建议": f"封面：{vehicle}与{keyword}符号化拼贴；内页：{scene0}场景图+{image0}细节+情绪金句海报",
+        },
+        {
+            "平台": "小红书",
+            "形式": "图文笔记",
+            "文案": (
+                f"姐妹们/兄弟们，{keyword}真的{emotion}了！\n"
+                f"{vehicle}的{scene0}让我瞬间get到{image0}，这波内容我悟了✨\n\n"
+                f"封面：{vehicle} × {keyword}氛围感\n"
+                f"内页：\n"
+                f"1️⃣ 热点关键词+车型结合点\n"
+                f"2️⃣ {scene0}实拍/氛围图\n"
+                f"3️⃣ {image0}细节特写\n"
+                f"4️⃣ 一句态度文案\n\n"
+                f"#{vehicle_key} #{keyword.replace(' ', '')} #汽车生活 #{emotion}出行 #{narrative}"
+            ),
+            "话题标签": f"#{vehicle_key} #{keyword.replace(' ', '')} #汽车生活 #{emotion}出行",
+            "配图建议": f"封面：{vehicle}与{keyword}元素拼贴；内页：{scene0}氛围图+细节特写+金句卡",
+        },
+    ]
+    return copies
+
+
 def generate_platform_copies(topic: Dict, vehicle_key: str = None) -> List[Dict]:
-    """生成抖音、微博、小红书三平台发布文案"""
+    """生成抖音、微博、小红书三平台发布文案（默认角度，保持兼容）"""
     if vehicle_key is None:
         vehicle_key = _best_vehicle_for_topic(topic)
     v = VEHICLES.get(vehicle_key, VEHICLES["雅阁"])
@@ -352,21 +430,24 @@ def generate_platform_copies(topic: Dict, vehicle_key: str = None) -> List[Dict]
     copies = [
         {
             "平台": "抖音",
+            "形式": "短视频",
             "文案": f"当{keyword}刷屏，{vehicle}车主的{scene0}有了新的故事。#广本{vehicle_key} #{keyword} #{emotion}出行",
             "话题标签": f"#{vehicle_key} #{keyword.replace(' ', '')} #{narrative} #广本",
-            "配图/视频建议": f"15-30秒短视频，前3秒用{keyword}热点画面抓眼，中段切{vehicle} {scene0}",
+            "配图建议": f"15-30秒短视频，前3秒用{keyword}热点画面抓眼，中段切{vehicle} {scene0}",
         },
         {
             "平台": "微博",
+            "形式": "图文",
             "文案": f"【{vehicle} × {keyword}】{narrative}的另一种表达，也许就是{image0}。你怎么看？",
             "话题标签": f"#{keyword}# #{vehicle_key}# #广本车型热点匹配#",
-            "配图/视频建议": f"九宫格：热点现场图2张 + {vehicle} {scene0}场景图5张 + 车型特写2张",
+            "配图建议": f"九宫格：热点现场图2张 + {vehicle} {scene0}场景图5张 + 车型特写2张",
         },
         {
             "平台": "小红书",
+            "形式": "图文笔记",
             "文案": f"姐妹们/兄弟们，{keyword}真的{emotion}了！{vehicle}的{scene0}让我瞬间get到{image0}，这波联名我悟了✨",
             "话题标签": f"#{vehicle_key} #{keyword.replace(' ', '')} #汽车生活 #{emotion}出行",
-            "配图/视频建议": f"封面：{vehicle}与{keyword}元素拼贴；内页：{scene0}氛围图+细节特写",
+            "配图建议": f"封面：{vehicle}与{keyword}元素拼贴；内页：{scene0}氛围图+细节特写",
         },
     ]
     return copies
@@ -427,13 +508,48 @@ def _color_for_emotion(emotion: str) -> str:
     return mapping.get(emotion, "品牌橙 + 白")
 
 
-def generate_topic_playbook(topic: Dict, vehicle_key: str = None) -> Dict:
-    """生成完整的内容演绎方案"""
+def generate_topic_playbook(
+    topic: Dict,
+    vehicle_key: str = None,
+    classified_angles: Dict[str, List[Dict]] = None,
+) -> Dict:
+    """
+    生成完整的内容演绎方案。
+    如果传入 classified_angles（含 video / graphic 两类），
+    则为每个视频角度生成 15s/20s/30s 分镜，为每个图文角度生成多平台文案。
+    """
     if vehicle_key is None:
         vehicle_key = _best_vehicle_for_topic(topic)
+
+    if classified_angles is None:
+        # 保持旧版行为：只生成默认的一套视频脚本 + 平台文案
+        return {
+            "推荐车型": vehicle_key,
+            "视频脚本": { "默认": generate_video_script(topic, vehicle_key) },
+            "平台文案": { "默认": generate_platform_copies(topic, vehicle_key) },
+            "视觉建议": generate_visual_guide(topic, vehicle_key),
+        }
+
+    video_angles = classified_angles.get("video", [])
+    graphic_angles = classified_angles.get("graphic", [])
+
+    video_scripts = {}
+    for i, va in enumerate(video_angles, start=1):
+        label = f"角度{i}：{va['angle']}"
+        video_scripts[label] = generate_video_script(
+            topic, vehicle_key, angle=va["angle"]
+        )
+
+    graphic_copies = {}
+    for i, ga in enumerate(graphic_angles, start=1):
+        label = f"角度{i}：{ga['angle']}"
+        graphic_copies[label] = generate_graphic_copies(
+            topic, vehicle_key, angle=ga["angle"]
+        )
+
     return {
         "推荐车型": vehicle_key,
-        "视频脚本": generate_video_script(topic, vehicle_key),
-        "平台文案": generate_platform_copies(topic, vehicle_key),
+        "视频脚本": video_scripts,
+        "平台文案": graphic_copies,
         "视觉建议": generate_visual_guide(topic, vehicle_key),
     }
