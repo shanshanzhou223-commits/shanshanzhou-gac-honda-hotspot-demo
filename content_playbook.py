@@ -321,6 +321,88 @@ def _theme_pack(
         pro30b_v = f"【落版全景】{vehicle}停在简洁背景前，车标正对镜头；画面右侧Slogan，底部「{vehicle} × {keyword}」联名字样。"
         pro30b_s = "高潮落版音效，音乐收"
 
+    # 中间镜头字幕：按主题差异化，避免所有角度都一样
+    if "life" in t:
+        hot20a_sub = f"早上刷到{keyword}，晚上它还在热搜上。"
+        hot30a_sub = f"你有没有发现，{keyword}正在改变我们过日子的方式？"
+        hot30b_sub = f"有人说这是{emotion}，有人说这就是普通人的日常。"
+        veh20a_sub = f"{vehicle}的{scene0}，是日常里最稳的确定性。"
+        veh20b_sub = f"热点会过去，但好日子的细节不会。"
+        veh30a_sub = angle
+        veh30b_sub = f"{vehicle}用{image0}，接住这份生活里的{emotion}。"
+        pro20_sub = f"{vehicle} × {keyword}｜{image0}，过好每一天"
+        pro30a_sub = f"{vehicle}｜{image0}，日子照常好"
+    elif "space" in t:
+        hot20a_sub = f"当{keyword}点亮夜空，有人看见了未来。"
+        hot30a_sub = f"你有没有想过，{keyword}为什么会让我们抬头？"
+        hot30b_sub = f"有人说这是{emotion}，有人说这就是对未知的向往。"
+        veh20a_sub = f"{vehicle}的{scene0}，装得下一片星空。"
+        veh20b_sub = f"我们不想上天，只想把星舰的浪漫带到地面。"
+        veh30a_sub = angle
+        veh30b_sub = f"{vehicle}用{image0}，接住这份仰望星空的{emotion}。"
+        pro20_sub = f"{vehicle} × {keyword}｜把星空，装进{scene0}"
+        pro30a_sub = f"{vehicle}｜{image0}，像星图一样指引方向"
+    elif "ai" in t:
+        hot20a_sub = f"{keyword}刷屏时，AI已经读完了所有评论。"
+        hot30a_sub = f"你有没有发现，{keyword}正在让机器变得更像人？"
+        hot30b_sub = f"有人说这是{emotion}，有人说这只是算法的胜利。"
+        veh20a_sub = f"{vehicle}的{scene0}，AI比你更懂怎么走。"
+        veh20b_sub = f"不追风口，只做一个能听懂你的座舱。"
+        veh30a_sub = angle
+        veh30b_sub = f"{vehicle}用{image0}，接住这份被智能理解的{emotion}。"
+        pro20_sub = f"{vehicle} × {keyword}｜{image0}，懂你说的和没说的"
+        pro30a_sub = f"{vehicle}｜{image0}，比想象更懂你"
+    elif "future" in t:
+        hot20a_sub = f"{keyword}不是终点，是下一次进化的起点。"
+        hot30a_sub = f"你有没有发现，{keyword}正在重新定义我们的出行？"
+        hot30b_sub = f"有人说这是{emotion}，有人说这就是未来的样子。"
+        veh20a_sub = f"{vehicle}的{scene0}，是通向未来的入口。"
+        veh20b_sub = f"不模仿未来，{vehicle}正在创造它。"
+        veh30a_sub = angle
+        veh30b_sub = f"{vehicle}用{image0}，接住这份对未来的{emotion}。"
+        pro20_sub = f"{vehicle} × {keyword}｜{image0}，就是未来"
+        pro30a_sub = f"{vehicle}｜{image0}，下一个时代的答案"
+    elif "sport" in t:
+        hot20a_sub = f"{keyword}火了，因为热血永远不过时。"
+        hot30a_sub = f"你有没有发现，{keyword}让我们的心跳都变快了？"
+        hot30b_sub = f"有人说这是{emotion}，有人说这就是竞技的魅力。"
+        veh20a_sub = f"{vehicle}的{scene0}，能装下这份热血。"
+        veh20b_sub = f"不是蹭冠军，{vehicle}本来就有赛道基因。"
+        veh30a_sub = angle
+        veh30b_sub = f"{vehicle}用{image0}，接住这份热血{emotion}。"
+        pro20_sub = f"{vehicle} × {keyword}｜{image0}，热血全开"
+        pro30a_sub = f"{vehicle}｜{image0}，为速度而生"
+    elif "family" in t:
+        hot20a_sub = f"{keyword}刷屏，但家人的消息更值得置顶。"
+        hot30a_sub = f"你有没有发现，{keyword}让我们更想守住重要的人？"
+        hot30b_sub = f"有人说这是{emotion}，有人说这就是生活的重量。"
+        veh20a_sub = f"{vehicle}的{scene0}，装得下一家人的{emotion}。"
+        veh20b_sub = f"不是蹭话题，是守护本来就重要。"
+        veh30a_sub = angle
+        veh30b_sub = f"{vehicle}用{image0}，接住这份对家人的{emotion}。"
+        pro20_sub = f"{vehicle} × {keyword}｜{image0}，守护每一程"
+        pro30a_sub = f"{vehicle}｜{image0}，给家人稳稳的幸福"
+    elif "life" in t:
+        hot20a_sub = f"早上刷到{keyword}，晚上它还在热搜上。"
+        hot30a_sub = f"你有没有发现，{keyword}正在改变我们过日子的方式？"
+        hot30b_sub = f"有人说这是{emotion}，有人说这就是普通人的日常。"
+        veh20a_sub = f"{vehicle}的{scene0}，是日常里最稳的确定性。"
+        veh20b_sub = f"热点会过去，但好日子的细节不会。"
+        veh30a_sub = angle
+        veh30b_sub = f"{vehicle}用{image0}，接住这份生活里的{emotion}。"
+        pro20_sub = f"{vehicle} × {keyword}｜{image0}，过好每一天"
+        pro30a_sub = f"{vehicle}｜{image0}，日子照常好"
+    else:
+        hot20a_sub = f"最近，{keyword}火了。"
+        hot30a_sub = f"你有没有发现，{keyword}正在改变我们的情绪？"
+        hot30b_sub = f"有人说这是{emotion}，有人说这就是生活。"
+        veh20a_sub = f"{vehicle}的{scene0}，刚好装得下这份{emotion}。"
+        veh20b_sub = f"不蹭热度，只讲好故事。"
+        veh30a_sub = angle
+        veh30b_sub = f"{vehicle}用{image0}，接住这份{emotion}。"
+        pro20_sub = f"{vehicle} × {keyword}｜{image0}，触手可及"
+        pro30a_sub = f"{vehicle}｜{positioning}"
+
     # 台词微调：让产品落版台词也随角度有变化
     if "space" in t:
         pro_15_sub = f"{vehicle}｜从星空到地面，探索不停"
@@ -341,6 +423,7 @@ def _theme_pack(
         pro_15_sub = f"{vehicle}｜好故事，从日常开始"
         pro30b_sub = f"{vehicle} × {keyword}｜生活，自有答案"
     else:
+        pro_15_sub = f"{vehicle}｜不止于车，更是一种态度"
         pro30b_sub = f"{vehicle} × {keyword}｜{narrative}，一种新的表达"
 
     return {
@@ -354,24 +437,33 @@ def _theme_pack(
         "pro_15_s": pro_15_s,
         "hot20a_v": hot20a_v,
         "hot20a_s": hot20a_s,
+        "hot20a_sub": hot20a_sub,
         "hot20b_v": hot20b_v,
         "hot20b_s": hot20b_s,
         "veh20a_v": veh20a_v,
         "veh20a_s": veh20a_s,
+        "veh20a_sub": veh20a_sub,
         "veh20b_v": veh20b_v,
         "veh20b_s": veh20b_s,
+        "veh20b_sub": veh20b_sub,
         "pro20_v": pro20_v,
         "pro20_s": pro20_s,
+        "pro20_sub": pro20_sub,
         "hot30a_v": hot30a_v,
         "hot30a_s": hot30a_s,
+        "hot30a_sub": hot30a_sub,
         "hot30b_v": hot30b_v,
         "hot30b_s": hot30b_s,
+        "hot30b_sub": hot30b_sub,
         "veh30a_v": veh30a_v,
         "veh30a_s": veh30a_s,
+        "veh30a_sub": veh30a_sub,
         "veh30b_v": veh30b_v,
         "veh30b_s": veh30b_s,
+        "veh30b_sub": veh30b_sub,
         "pro30a_v": pro30a_v,
         "pro30a_s": pro30a_s,
+        "pro30a_sub": pro30a_sub,
         "pro30b_v": pro30b_v,
         "pro30b_s": pro30b_s,
         "pro30b_sub": pro30b_sub,
@@ -471,7 +563,7 @@ def generate_video_script(topic: Dict, vehicle_key: str = None, angle: str = Non
                             "镜号": 1,
                             "时长": "0-3秒",
                             "画面描述": p["hot20a_v"],
-                            "台词/字幕": f"最近，{keyword}火了。",
+                            "台词/字幕": p["hot20a_sub"],
                             "音效/音乐": p["hot20a_s"],
                         },
                         {
@@ -490,14 +582,14 @@ def generate_video_script(topic: Dict, vehicle_key: str = None, angle: str = Non
                             "镜号": 3,
                             "时长": "6-10秒",
                             "画面描述": p["veh20a_v"],
-                            "台词/字幕": f"{vehicle}的{scene0}，刚好装得下这份{emotion}",
+                            "台词/字幕": p["veh20a_sub"],
                             "音效/音乐": p["veh20a_s"],
                         },
                         {
                             "镜号": 4,
                             "时长": "10-13秒",
                             "画面描述": p["veh20b_v"],
-                            "台词/字幕": f"不蹭热度，只讲好故事",
+                            "台词/字幕": p["veh20b_sub"],
                             "音效/音乐": p["veh20b_s"],
                         },
                     ],
@@ -509,7 +601,7 @@ def generate_video_script(topic: Dict, vehicle_key: str = None, angle: str = Non
                             "镜号": 5,
                             "时长": "13-20秒",
                             "画面描述": p["pro20_v"],
-                            "台词/字幕": f"{vehicle} × {keyword}｜{image0}，触手可及",
+                            "台词/字幕": p["pro20_sub"],
                             "音效/音乐": p["pro20_s"],
                         }
                     ],
@@ -529,14 +621,14 @@ def generate_video_script(topic: Dict, vehicle_key: str = None, angle: str = Non
                             "镜号": 1,
                             "时长": "0-4秒",
                             "画面描述": p["hot30a_v"],
-                            "台词/字幕": f"你有没有发现，{keyword}正在改变我们的情绪？",
+                            "台词/字幕": p["hot30a_sub"],
                             "音效/音乐": p["hot30a_s"],
                         },
                         {
                             "镜号": 2,
                             "时长": "4-8秒",
                             "画面描述": p["hot30b_v"],
-                            "台词/字幕": f"有人说这是{emotion}，有人说这就是生活。",
+                            "台词/字幕": p["hot30b_sub"],
                             "音效/音乐": p["hot30b_s"],
                         },
                     ],
@@ -548,14 +640,14 @@ def generate_video_script(topic: Dict, vehicle_key: str = None, angle: str = Non
                             "镜号": 3,
                             "时长": "8-13秒",
                             "画面描述": p["veh30a_v"],
-                            "台词/字幕": angle,
+                            "台词/字幕": p["veh30a_sub"],
                             "音效/音乐": p["veh30a_s"],
                         },
                         {
                             "镜号": 4,
                             "时长": "13-19秒",
                             "画面描述": p["veh30b_v"],
-                            "台词/字幕": f"{vehicle}用{image0}，接住这份{emotion}",
+                            "台词/字幕": p["veh30b_sub"],
                             "音效/音乐": p["veh30b_s"],
                         },
                     ],
@@ -567,7 +659,7 @@ def generate_video_script(topic: Dict, vehicle_key: str = None, angle: str = Non
                             "镜号": 5,
                             "时长": "19-24秒",
                             "画面描述": p["pro30a_v"],
-                            "台词/字幕": f"{vehicle}｜{positioning}",
+                            "台词/字幕": p["pro30a_sub"],
                             "音效/音乐": p["pro30a_s"],
                         },
                         {
