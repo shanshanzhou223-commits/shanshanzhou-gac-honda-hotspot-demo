@@ -33,7 +33,33 @@ from matcher import (
     rank_all_vehicles,
 )
 from auto_label import auto_label_topic
-from angles import generate_classified_angles, generate_content_angles
+try:
+    from angles import generate_classified_angles, generate_content_angles
+except ImportError:
+    # 兼容 Streamlit Cloud 模块缓存：如果 angles.py 还未更新，则回退到本地简单分类
+    from angles import generate_content_angles
+
+    def generate_classified_angles(
+        topic_text: str,
+        vehicle_key: str,
+        topic_labels: dict,
+        match_types: list,
+        video_n: int = 7,
+        graphic_n: int = 4,
+    ) -> dict:
+        all_angles = generate_content_angles(
+            topic_text,
+            vehicle_key,
+            topic_labels,
+            match_types,
+            top_n=(video_n + graphic_n) * 3,
+        )
+        video_types = {"短视频", "创意视频", "短视频 / 图文"}
+        graphic_types = {"图文", "长图文", "讨论", "小红书笔记"}
+        video = [a for a in all_angles if a.get("type") in video_types][:video_n]
+        graphic = [a for a in all_angles if a.get("type") in graphic_types][:graphic_n]
+        return {"video": video, "graphic": graphic}
+
 from content_playbook import generate_topic_playbook
 
 st.set_page_config(
