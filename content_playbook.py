@@ -717,7 +717,7 @@ def _flatten_video_script(scripts: List[Dict]) -> List[Dict]:
 
 def generate_graphic_copies(topic: Dict, vehicle_key: str = None, angle: str = None) -> List[Dict]:
     """
-    为单个图文/长图文内容角度，生成多平台发布文案。
+    为单个图文/长图文内容角度，生成可直接发布的完整多平台文案。
     覆盖：微博（短图文/thread）、知乎（讨论/回答）、微信公众号（长图文）、小红书（图文笔记）。
     """
     if vehicle_key is None:
@@ -736,66 +736,140 @@ def generate_graphic_copies(topic: Dict, vehicle_key: str = None, angle: str = N
     if angle is None:
         angle = f"从{keyword}看{vehicle}：{image0}的另一种表达"
 
+    themes = _detect_angle_themes(angle)
+    t = set(themes)
+
+    # 主题化钩子与观点
+    if "space" in t:
+        hook = f"当所有人抬头看{keyword}，{vehicle}想告诉你：探索的浪漫，也可以在地面发生。"
+        insight = f"{keyword}让我们再次相信，人类对远方的渴望从未熄灭。"
+        product_angle = f"{vehicle}的智能座舱，就像一艘地面的飞船——星图、航线、未来感，全都在{scene0}里。"
+        cta = "上车，开启你的下一段探索。"
+    elif "ai" in t:
+        hook = f"{keyword}刷屏的时候，真正该被看见的，是{vehicle}怎么用{image0}回应这个时代。"
+        insight = f"{keyword}不只是一次技术热点，它让我们重新思考：一辆车能不能像AI一样懂你？"
+        product_angle = f"{vehicle}的{image0}，不是堆参数，而是让每一次{scene0}都更顺手、更贴心。"
+        cta = "体验一次被懂得的出行。"
+    elif "future" in t:
+        hook = f"{keyword}让我们看见未来的一角，而{vehicle}正在把未来开到寻常生活里。"
+        insight = f"当{keyword}成为话题，真正值得问的是：下一个时代的出行，应该是什么样子？"
+        product_angle = f"{vehicle}用{image0}给出了自己的答案——{positioning}，不只是现在，更是下一步。"
+        cta = "预约试驾，感受未来已来。"
+    elif "sport" in t:
+        hook = f"{keyword}点燃的热血，{vehicle}用{image0}接住了。"
+        insight = f"{keyword}之所以让人沸腾，是因为它触碰了我们骨子里对速度与胜利的渴望。"
+        product_angle = f"{vehicle}的{scene0}，不是日常通勤的将就，而是赛道基因在街道上的延续。"
+        cta = "踩一脚，感受真正的驾驶乐趣。"
+    elif "family" in t:
+        hook = f"{keyword}刷屏时，{vehicle}只想做一件事：守护好你最重要的人。"
+        insight = f"{keyword}让我们想起，生活里最沉重的责任，往往也是最温柔的爱。"
+        product_angle = f"{vehicle}的{scene0}，装得下一家人的{emotion}，也装得下每一次出发的安心。"
+        cta = "带上家人，去任何想去的地方。"
+    elif "life" in t:
+        hook = f"{keyword}是热搜上的热闹，{vehicle}是你日子里的确定感。"
+        insight = f"热点会过去，但{scene0}里的舒适、顺手、可靠，会一直陪着你。"
+        product_angle = f"{vehicle}的{image0}，不会抢{keyword}的风头，只会在你需要的时候，把每一段路都开好。"
+        cta = "日子照常好，从一次试驾开始。"
+    else:
+        hook = f"{keyword}刷屏了，{vehicle}用{image0}给出了一个不一样的回答。"
+        insight = f"{keyword}的背后，是{audience}对{narrative}的真实情绪。"
+        product_angle = f"{vehicle}作为{positioning}，在{scene0}里自然承接了这份{emotion}。"
+        cta = "想了解更多，欢迎到店试驾。"
+
+    # ---- 微博：可直接发布的短图文 thread ----
+    weibo_copy = (
+        f"【{vehicle} × {keyword}】{hook}\n\n"
+        f"1️⃣ {insight}\n"
+        f"2️⃣ {product_angle}\n"
+        f"3️⃣ {cta}\n\n"
+        f"配图建议：热点现场图2张 + {vehicle} {scene0}场景图5张 + 车型特写2张\n\n"
+        f"#{keyword}# #{vehicle_key}# #广本车型热点匹配#"
+    )
+
+    # ---- 知乎：可直接发布的完整回答 ----
+    zhihu_copy = (
+        f"如何评价「{keyword}」与{vehicle}的这次相遇？\n\n"
+        f"我的回答很简单：{angle}\n\n"
+        f"{insight}\n\n"
+        f"很多人把这次{field}热点当成一次流量机会，但{vehicle}没有硬蹭。"
+        f"它选择从自己的{scene0}出发，用{image0}去回应{keyword}背后的{narrative}情绪。"
+        f"对{audience}来说，这种回应不是强行植入，而是一种「本来就该这样」的共鸣。\n\n"
+        f"{product_angle}\n\n"
+        f"所以，与其问「{vehicle}为什么要接{keyword}」，不如问「为什么{keyword}会让{vehicle}被重新看见」。"
+        f"答案或许是：真正好的产品，从不追逐热点，它本身就是答案。\n\n"
+        f"{cta}\n\n"
+        f"#{keyword}# #{vehicle_key}# #汽车营销#"
+    )
+
+    # ---- 微信公众号：可直接发布的完整长图文 ----
+    wechat_title = angle
+    wechat_copy = (
+        f"{wechat_title}\n\n"
+        f"文／广汽本田\n\n"
+        f"01\n"
+        f"最近，{keyword}刷屏了。\n\n"
+        f"有人说这是{emotion}，有人说这就是生活。而当我们放下手机，认真想一想，"
+        f"{keyword}之所以能引发这么多讨论，或许是因为它触碰了我们内心深处对{narrative}的渴望。\n\n"
+        f"{insight}\n\n"
+        f"02\n"
+        f"热点来来去去，但一个品牌的回应，应该经得起细看。\n\n"
+        f"{vehicle}没有急着抢话题，而是回到自己最熟悉的场景——{scene0}，"
+        f"用{image0}给出了一份不紧不慢的回答。\n\n"
+        f"{product_angle}\n\n"
+        f"它不是要蹭{keyword}的热度，而是想告诉你：当外界风云变幻，"
+        f"一辆好车能给你的，是稳稳的方向盘、舒适的空间，和每一次出发都安心的底气。\n\n"
+        f"03\n"
+        f"对{audience}来说，{vehicle}从来不只是一个交通工具。\n\n"
+        f"它是{positioning}，是{scene0}里的可靠伙伴，也是{emotion}的落点。"
+        f"{keyword}让我们再次看见它，而它早已在日常里，陪你走了很远。\n\n"
+        f"{cta}\n\n"
+        f"——\n"
+        f"互动话题：你最近一次被{keyword}打动，是因为什么？欢迎在评论区留言。\n\n"
+        f"（文末可插入车型高清图、配置表、试驾预约二维码）"
+    )
+
+    # ---- 小红书：可直接发布的图文笔记 ----
+    xhs_copy = (
+        f"姐妹们/兄弟们，{keyword}真的{emotion}了！✨\n"
+        f"但最让我惊喜的是，{vehicle}的{scene0}居然和这个话题这么搭！\n\n"
+        f"🌟 为什么{keyword}会火？\n"
+        f"{insight}\n\n"
+        f"🚗 {vehicle}怎么接？\n"
+        f"它没有硬蹭，而是用{image0}自然回应。\n"
+        f"{product_angle}\n\n"
+        f"📸 拍摄 tips：\n"
+        f"1️⃣ 封面：{vehicle}与{keyword}元素拼贴\n"
+        f"2️⃣ 内页：{scene0}氛围图 + {image0}细节特写\n"
+        f"3️⃣ 文案卡：{cta}\n\n"
+        f"#{vehicle_key} #{keyword.replace(' ', '')} #汽车生活 #{emotion}出行 #{narrative} #广本"
+    )
+
     copies = [
         {
             "平台": "微博",
             "形式": "短图文 / 九宫格 thread",
-            "文案": (
-                f"【{vehicle} × {keyword}】{narrative}的另一种表达，也许就是{image0}。\n\n"
-                f"1️⃣ {keyword}刷屏，真正值得接住的是什么？\n"
-                f"2️⃣ {vehicle}的{scene0}，恰好给了这份{emotion}一个落点。\n"
-                f"3️⃣ {positioning}，不是蹭热度，是本来就这样。\n\n"
-                f"你怎么看？#{keyword}# #{vehicle_key}# #广本车型热点匹配#"
-            ),
+            "文案": weibo_copy,
             "话题标签": f"#{keyword}# #{vehicle_key}# #广本车型热点匹配#",
             "配图建议": f"九宫格：热点现场图2张 + {vehicle} {scene0}场景图5张 + 车型特写2张",
         },
         {
             "平台": "知乎",
             "形式": "回答 / 深度讨论",
-            "文案": (
-                f"如何评价「{keyword}」与{vehicle}的这次相遇？\n\n"
-                f"我的看法是：{angle}\n\n"
-                f"{keyword}本质上是一个关于{narrative}的社会情绪。{vehicle}作为{positioning}，"
-                f"它的{image0}和{scene0}天然能和这个情绪产生连接。\n\n"
-                f"对{audience}来说，{vehicle}不是追热点的工具，而是{emotion}的落点。\n\n"
-                f"你怎么看这次{field}热点与汽车品牌的结合？"
-            ),
+            "文案": zhihu_copy,
             "话题标签": f"#{keyword}# #{vehicle_key}# #汽车营销#",
-            "配图建议": f"信息长图1张：{keyword}时间线 + {vehicle}产品点对照；或3-5张场景图",
+            "配图建议": f"信息长图1张：{keyword}与{vehicle}价值对照；或3-5张场景图",
         },
         {
             "平台": "微信公众号",
             "形式": "长图文",
-            "文案": (
-                f"标题：{angle}\n\n"
-                f"开篇：最近，{keyword}刷屏了。有人说这是{emotion}，有人说这就是生活。\n\n"
-                f"第一部分：{keyword}为什么能火？\n"
-                f"拆解这个{field}话题背后的{narrative}情绪，以及它为何能击中{audience}。\n\n"
-                f"第二部分：{vehicle}的{image0}，如何回应这个热点？\n"
-                f"从{scene0}切入，讲{vehicle}如何不蹭热度、只讲好故事。"
-                f"结合产品卖点（{image0}、{positioning}）做价值锚定。\n\n"
-                f"第三部分：给{audience}的一句话\n"
-                f"{vehicle} × {keyword}｜{narrative}，不止于车，更是一种态度。\n\n"
-                f"结尾：引导试驾/到店/留资，附车型高清图。"
-            ),
+            "文案": wechat_copy,
             "话题标签": f"广本{vehicle_key}｜{keyword}｜{emotion}出行",
             "配图建议": f"封面：{vehicle}与{keyword}符号化拼贴；内页：{scene0}场景图+{image0}细节+情绪金句海报",
         },
         {
             "平台": "小红书",
             "形式": "图文笔记",
-            "文案": (
-                f"姐妹们/兄弟们，{keyword}真的{emotion}了！\n"
-                f"{vehicle}的{scene0}让我瞬间get到{image0}，这波内容我悟了✨\n\n"
-                f"封面：{vehicle} × {keyword}氛围感\n"
-                f"内页：\n"
-                f"1️⃣ 热点关键词+车型结合点\n"
-                f"2️⃣ {scene0}实拍/氛围图\n"
-                f"3️⃣ {image0}细节特写\n"
-                f"4️⃣ 一句态度文案\n\n"
-                f"#{vehicle_key} #{keyword.replace(' ', '')} #汽车生活 #{emotion}出行 #{narrative}"
-            ),
+            "文案": xhs_copy,
             "话题标签": f"#{vehicle_key} #{keyword.replace(' ', '')} #汽车生活 #{emotion}出行",
             "配图建议": f"封面：{vehicle}与{keyword}元素拼贴；内页：{scene0}氛围图+细节特写+金句卡",
         },
