@@ -33,6 +33,14 @@ from matcher import (
     rank_all_vehicles,
 )
 from auto_label import auto_label_topic
+import importlib
+
+# 强制重新加载本地模块，避免 Streamlit Cloud 模块缓存导致旧代码运行
+import angles
+import content_playbook
+importlib.reload(angles)
+importlib.reload(content_playbook)
+
 try:
     from angles import generate_classified_angles, generate_content_angles
 except ImportError:
