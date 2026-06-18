@@ -297,10 +297,16 @@ def generate_video_script(topic: Dict, vehicle_key: str = None) -> List[Dict]:
         },
     ]
 
-    # 拍平成旧版兼容的列表，方便 DataFrame 渲染；同时保留结构化信息
-    flat_scripts = []
-    for d in durations:
-        flat_scripts.append(
+    return durations
+
+
+def _flatten_video_script(scripts: List[Dict]) -> List[Dict]:
+    """
+    将结构化视频脚本拍平成旧版 DataFrame 格式，便于兼容展示。
+    """
+    flat = []
+    for d in scripts:
+        flat.append(
             {
                 "时长": d["时长"],
                 "内容角度": d["内容角度"],
@@ -315,7 +321,7 @@ def generate_video_script(topic: Dict, vehicle_key: str = None) -> List[Dict]:
         )
         for act in d["acts"]:
             for shot in act["shots"]:
-                flat_scripts.append(
+                flat.append(
                     {
                         "时长": d["时长"],
                         "内容角度": "",
@@ -328,7 +334,7 @@ def generate_video_script(topic: Dict, vehicle_key: str = None) -> List[Dict]:
                         "音效/音乐": shot["音效/音乐"],
                     }
                 )
-    return flat_scripts
+    return flat
 
 
 def generate_platform_copies(topic: Dict, vehicle_key: str = None) -> List[Dict]:
