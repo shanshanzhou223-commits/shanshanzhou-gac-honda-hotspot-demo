@@ -1393,40 +1393,54 @@ with tab3:
 
             
             with content_tab2:
-                # 内容角度 + 深度演绎
-                if top_topic["safety"] >= 30:
-                    st.markdown("**💡 建议内容角度**")
-                    # 构造 labels
-                    top_topic_labels = next(
-                        t for t in all_topics if t["topic"] == top_topic["topic"]
-                    )
-                    classified_angles = generate_classified_angles(
-                        top_topic["topic"],
-                        selected_vehicle,
-                        top_topic_labels,
-                        top_topic["match_types"],
-                        video_n=7,
-                        graphic_n=4,
-                    )
+                # 为 Top10 热点分别生成内容方案
+                st.markdown(f"**💡 {v['name']} 最匹配的 10 个热点方向及内容方案**")
+                st.caption("每个热点方向均生成：短视频选题 + 图文选题 + 深度内容演绎方案（视频脚本 / 平台文案 / 配图建议）。")
 
-                    video_angles = classified_angles["video"]
-                    graphic_angles = classified_angles["graphic"]
+                with st.spinner("正在为 Top10 热点生成内容方案，请稍候..."):
+                    for rank, r in enumerate(topic_rankings[:10], 1):
+                        topic_labels = next(
+                            t for t in all_topics if t["topic"] == r["topic"]
+                        )
+                        with st.expander(
+                            f"{rank}. {r['topic']}（{r['tier']}，{r['full_score']}分）"
+                        ):
+                            if r["safety"] < 30:
+                                st.info("该热点安全等级为「风险」，已停止生成内容角度。建议放弃或仅监测。")
+                                continue
 
-                    st.markdown("*短视频选题（7个）*")
-                    for i, a in enumerate(video_angles):
-                        st.markdown(f"{i + 1}. **{a['type']}（{a['platform']}）**：{a['angle']}")
+                            st.markdown("**📌 建议内容角度**")
+                            classified_angles = generate_classified_angles(
+                                r["topic"],
+                                selected_vehicle,
+                                topic_labels,
+                                r["match_types"],
+                                video_n=7,
+                                graphic_n=4,
+                            )
 
-                    st.markdown("*图文选题（4个）*")
-                    for i, a in enumerate(graphic_angles):
-                        st.markdown(f"{i + 1}. **{a['type']}（{a['platform']}）**：{a['angle']}")
+                            video_angles = classified_angles["video"]
+                            graphic_angles = classified_angles["graphic"]
 
-                    # 深度内容演绎：视频脚本 + 平台文案 + 视觉建议
-                    render_content_playbook(
-                        top_topic_labels,
-                        selected_vehicle,
-                        title="🎬 深度内容演绎方案（视频脚本 / 平台文案 / 配图建议）",
-                        classified_angles=classified_angles,
-                    )
+                            st.markdown("*短视频选题（7个）*")
+                            for i, a in enumerate(video_angles):
+                                st.markdown(
+                                    f"{i + 1}. **{a['type']}（{a['platform']}）**：{a['angle']}"
+                                )
+
+                            st.markdown("*图文选题（4个）*")
+                            for i, a in enumerate(graphic_angles):
+                                st.markdown(
+                                    f"{i + 1}. **{a['type']}（{a['platform']}）**：{a['angle']}"
+                                )
+
+                            # 深度内容演绎：视频脚本 + 平台文案 + 视觉建议
+                            render_content_playbook(
+                                topic_labels,
+                                selected_vehicle,
+                                title="🎬 深度内容演绎方案（视频脚本 / 平台文案 / 配图建议）",
+                                classified_angles=classified_angles,
+                            )
 
             
             with data_tab2:
