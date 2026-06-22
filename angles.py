@@ -81,7 +81,7 @@ def generate_content_angles(
             "platform": "B站 / 抖音",
         },
         {
-            "template": "《{vehicle}不是蹭{keyword}，是它本来就这样》",
+            "template": "《{vehicle}回应{keyword}：本色出演》",
             "type": "短视频",
             "platform": "抖音 / 视频号",
         },
@@ -187,7 +187,7 @@ def generate_content_angles(
             "platform": "微博",
         },
         {
-            "template": "《当{keyword}成为流量密码，{vehicle}选择不硬蹭》",
+            "template": "《当{keyword}成为焦点，{vehicle}选择用实力回应》",
             "type": "长图文",
             "platform": "微信公众号",
         },
@@ -316,7 +316,7 @@ def generate_classified_angles(
             f"《把{keyword}拍成一支{vehicle_key}广告，会是什么样？》",
             f"《如果{keyword}是一辆车，大概就是{vehicle_key}的样子》",
             f"《用{vehicle_key}的{image0}，重新理解{keyword}》",
-            f"《{vehicle_key}不是蹭{keyword}，是它本来就这样》",
+            f"《{vehicle_key}回应{keyword}：本色出演》",
         ]
         for text in backup_video:
             if len(video_angles) >= video_n:

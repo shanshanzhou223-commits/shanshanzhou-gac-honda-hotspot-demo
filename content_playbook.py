@@ -367,7 +367,7 @@ def _theme_pack(
         hot30a_sub = f"你有没有发现，{keyword}让我们的心跳都变快了？"
         hot30b_sub = f"有人说这是{emotion}，有人说这就是竞技的魅力。"
         veh20a_sub = f"{vehicle}的{scene0}，能装下这份热血。"
-        veh20b_sub = f"不是蹭冠军，{vehicle}本来就有赛道基因。"
+        veh20b_sub = f"冠军只是结果，{vehicle}的赛道基因一直都在。"
         veh30a_sub = angle
         veh30b_sub = f"{vehicle}用{image0}，接住这份热血{emotion}。"
         pro20_sub = f"{vehicle} × {keyword}｜{image0}，热血全开"
@@ -377,7 +377,7 @@ def _theme_pack(
         hot30a_sub = f"你有没有发现，{keyword}让我们更想守住重要的人？"
         hot30b_sub = f"有人说这是{emotion}，有人说这就是生活的重量。"
         veh20a_sub = f"{vehicle}的{scene0}，装得下一家人的{emotion}。"
-        veh20b_sub = f"不是蹭话题，是守护本来就重要。"
+        veh20b_sub = f"守护家人，从来不是话题，而是本能。"
         veh30a_sub = angle
         veh30b_sub = f"{vehicle}用{image0}，接住这份对家人的{emotion}。"
         pro20_sub = f"{vehicle} × {keyword}｜{image0}，守护每一程"
@@ -397,7 +397,7 @@ def _theme_pack(
         hot30a_sub = f"你有没有发现，{keyword}正在改变我们的情绪？"
         hot30b_sub = f"有人说这是{emotion}，有人说这就是生活。"
         veh20a_sub = f"{vehicle}的{scene0}，刚好装得下这份{emotion}。"
-        veh20b_sub = f"不蹭热度，只讲好故事。"
+        veh20b_sub = f"热度会过去，{vehicle}的故事一直在发生。"
         veh30a_sub = angle
         veh30b_sub = f"{vehicle}用{image0}，接住这份{emotion}。"
         pro20_sub = f"{vehicle} × {keyword}｜{image0}，触手可及"
@@ -718,8 +718,8 @@ def _flatten_video_script(scripts: List[Dict]) -> List[Dict]:
 def generate_graphic_copies(topic: Dict, vehicle_key: str = None, angle: str = None) -> List[Dict]:
     """
     为单个图文/长图文内容角度，生成可直接发布的完整多平台文案。
-    覆盖：微博（短图文/thread）、知乎（讨论/回答）、微信公众号（长图文）、小红书（图文笔记）。
-    每个角度、每个平台的文案、话题标签、配图建议均做差异化。
+    覆盖：微博、知乎、微信公众号、小红书。
+    每个角度有独立的文案逻辑，避免同主题重复；文案中不出现「蹭热点」等负面表述。
     """
     if vehicle_key is None:
         vehicle_key = _best_vehicle_for_topic(topic)
@@ -733,219 +733,351 @@ def generate_graphic_copies(topic: Dict, vehicle_key: str = None, angle: str = N
     image0 = v["image"][0] if v["image"] else "品质"
     scene0 = v["scenes"][0] if v["scenes"] else "出行"
     positioning = v["positioning"]
+    selling_points = v.get("image", ["品质"])
+    selling_text = "、".join(selling_points[:3]) if len(selling_points) >= 3 else "、".join(selling_points)
+    safe_keyword = keyword.replace(" ", "")
 
     if angle is None:
         angle = f"从{keyword}看{vehicle}：{image0}的另一种表达"
 
+    # 角度类型判定（按特异性从高到低，避免“为什么……刚刚好”被误判为 why）
+    angle_type = "default"
+    if "守住" in angle or "别人" in angle or "不追" in angle:
+        angle_type = "guard"
+    elif "刚刚" in angle or "刚好" in angle or "正好" in angle or "恰逢" in angle:
+        angle_type = "fit"
+    elif "氛围" in angle or "氛围感" in angle or "情绪" in angle:
+        angle_type = "atmosphere"
+    elif "一天" in angle or "日常" in angle or "车主" in angle or "生活" in angle:
+        angle_type = "life"
+    elif "答案" in angle or "回应" in angle or "未来" in angle:
+        angle_type = "answer"
+    elif "为什么" in angle or "怎么" in angle or "如何" in angle:
+        angle_type = "why"
+
+    # 主题词库（只用于配图/标签/氛围，不主导文案结构）
     themes = _detect_angle_themes(angle)
     t = set(themes)
-
-    # 角度关键词提取：用于让同主题下不同角度也有差异
-    angle_lower = angle.lower()
-    has_why = "为什么" in angle or "怎么" in angle
-    has_atmosphere = "氛围" in angle or "氛围感" in angle
-    has_just_right = "刚刚" in angle or "刚好" in angle
-    has_guard = "守住" in angle or "守住" in angle
-    has_day = "一天" in angle or "日常" in angle
-    has_answer = "答案" in angle or "回应" in angle
-
-    # 主题化基础素材
     if "space" in t:
-        theme_hook = "探索的浪漫，也可以在地面发生"
-        theme_insight = "人类对远方的渴望从未熄灭"
-        theme_product = f"{vehicle}的智能座舱，就像一艘地面的飞船"
-        theme_visual = "星图、航线、未来感"
-        theme_cta = "上车，开启你的下一段探索"
-        base_tags = ["#航天", "#探索", "#未来出行"]
+        theme_tag_line = "航天探索"
+        theme_visual = "星空、火箭尾焰、轿跑车身、智能座舱"
+        base_tags = "#航天 #探索 #未来出行"
     elif "ai" in t:
-        theme_hook = "一辆车能不能像AI一样懂你"
-        theme_insight = "技术热点让我们重新思考人车关系"
-        theme_product = f"{vehicle}的{image0}，不是堆参数，而是让每次{scene0}更顺手"
-        theme_visual = "语音交互、数字界面、HUD"
-        theme_cta = "体验一次被懂得的出行"
-        base_tags = ["#AI", "#智能座舱", "#科技出行"]
-    elif "future" in t:
-        theme_hook = "把未来开到寻常生活里"
-        theme_insight = "下一个时代的出行应该是什么样子"
-        theme_product = f"{vehicle}用{image0}给出了自己的答案"
-        theme_visual = "光线轨迹、未来城市、科技粒子"
-        theme_cta = "预约试驾，感受未来已来"
-        base_tags = ["#未来科技", "#进化", "#新物种"]
+        theme_tag_line = "智能科技"
+        theme_visual = "数字界面、语音助手、HUD、车灯细节"
+        base_tags = "#AI #智能座舱 #科技出行"
     elif "sport" in t:
-        theme_hook = "热血，值得被认真对待"
-        theme_insight = "速度与胜利是刻在基因里的渴望"
-        theme_product = f"{vehicle}的{scene0}，是赛道基因在街道上的延续"
-        theme_visual = "速度线、运动套件、过弯姿态"
-        theme_cta = "踩一脚，感受真正的驾驶乐趣"
-        base_tags = ["#运动基因", "#驾驶乐趣", "#热血"]
+        theme_tag_line = "运动驾趣"
+        theme_visual = "过弯姿态、运动套件、仪表盘、方向盘"
+        base_tags = "#驾驶乐趣 #运动基因 #热血"
     elif "family" in t:
-        theme_hook = "守护，是最大的浪漫"
-        theme_insight = "生活里最重的责任，往往是最温柔的爱"
-        theme_product = f"{vehicle}的{scene0}，装得下一家人的{emotion}"
-        theme_visual = "夕阳、家人、大空间、安全配置"
-        theme_cta = "带上家人，去任何想去的地方"
-        base_tags = ["#家庭出行", "#守护", "#责任"]
+        theme_tag_line = "家庭守护"
+        theme_visual = "家人、大空间、安全配置、夕阳街道"
+        base_tags = "#家庭出行 #守护 #责任"
     elif "life" in t:
-        theme_hook = "日子照常好"
-        theme_insight = "热点会过去，但好日子的细节不会"
-        theme_product = f"{vehicle}的{image0}，不会抢{keyword}风头，只会在你需要时把路开好"
-        theme_visual = "清晨、咖啡、城市街角、真实日常"
-        theme_cta = "日子照常好，从一次试驾开始"
-        base_tags = ["#日常", "#生活方式", "#稳稳的幸福"]
+        theme_tag_line = "生活方式"
+        theme_visual = "城市街角、咖啡、通勤、真实日常"
+        base_tags = "#日常 #生活方式 #稳稳的幸福"
     else:
-        theme_hook = "给热点一个不一样的回答"
-        theme_insight = f"{audience}对{narrative}的真实情绪"
-        theme_product = f"{vehicle}作为{positioning}，在{scene0}里自然承接了这份{emotion}"
+        theme_tag_line = narrative if narrative else "车型热点"
         theme_visual = f"{field}氛围、{scene0}、{image0}细节"
-        theme_cta = "想了解更多，欢迎到店试驾"
-        base_tags = [f"#{field}", f"#{narrative}", "#汽车品牌"]
+        base_tags = f"#{field} #{narrative} #汽车品牌"
 
-    # 角度特异性润色：同主题不同角度也有差异
-    if has_why:
-        angle_nuance = "不是追热点，而是回应一个问题"
-        angle_question = f"为什么{keyword}会让{vehicle}被重新看见？"
-    elif has_atmosphere:
-        angle_nuance = "把情绪变成可感知的氛围"
-        angle_question = f"{keyword}的{emotion}，{vehicle}怎么呈现？"
-    elif has_just_right:
-        angle_nuance = "不早不晚，刚刚好"
-        angle_question = f"{keyword}火了，{vehicle}为什么刚刚好？"
-    elif has_guard:
-        angle_nuance = "在喧嚣里守住自己的节奏"
-        angle_question = f"别人都在聊{keyword}，{vehicle}在守什么？"
-    elif has_day:
-        angle_nuance = "热点之外，生活继续"
-        angle_question = f"{keyword}之后，{vehicle}的一天怎么过？"
-    elif has_answer:
-        angle_nuance = "用产品给出回答"
-        angle_question = f"{keyword}之后，{vehicle}的{image0}是什么答案？"
+    # 卖点强调句（按角度类型差异化，避免出现“蹭热点/追话题”等负面表述）
+    if angle_type == "why":
+        selling_claim = f"{vehicle}的{selling_text}，恰好能回应{keyword}背后的{narrative}。"
+    elif angle_type == "guard":
+        selling_claim = f"当外界被{keyword}吸引，{vehicle}选择用{selling_text}守住自己的节奏——不喧哗，自有声。"
+    elif angle_type == "fit":
+        selling_claim = f"{keyword}的火，和{vehicle}的{selling_text}相遇，不早不晚，刚刚好。"
+    elif angle_type == "atmosphere":
+        selling_claim = f"{keyword}的{emotion}，被{vehicle}的{selling_text}转化成可触摸的{scene0}氛围。"
+    elif angle_type == "life":
+        selling_claim = f"{keyword}是当下的热闹，{vehicle}的{selling_text}是日子里的确定感。"
+    elif angle_type == "answer":
+        selling_claim = f"{keyword}提出了问题，{vehicle}用{selling_text}给出了自己的回答。"
     else:
-        angle_nuance = "从热点里找到自己的落点"
-        angle_question = f"{keyword}刷屏，{vehicle}怎么接？"
+        selling_claim = f"{vehicle}的{selling_text}，让它和{keyword}之间产生了一种自然的连接。"
 
-    safe_keyword = keyword.replace(" ", "")
+    # ---------------- 微博 ----------------
+    if angle_type == "why":
+        weibo_body = (
+            f"为什么{keyword}会让{vehicle}被重新看见？\n\n"
+            f"因为{vehicle}的{selling_text}，"
+            f"本就和{keyword}背后的{narrative}同频。\n\n"
+            f"{selling_claim}\n\n"
+            f"这不是强行关联，而是产品力本身就在回应同一种情绪。"
+        )
+    elif angle_type == "guard":
+        weibo_body = (
+            f"别人都在聊{keyword}，{vehicle}在做什么？\n\n"
+            f"它没有跟着喧哗，而是回到自己最熟悉的{scene0}，"
+            f"用{selling_text}守住一份稳定。\n\n"
+            f"{selling_claim}\n\n"
+            f"真正的品牌表达，从来不需要大声。"
+        )
+    elif angle_type == "fit":
+        weibo_body = (
+            f"{keyword}火了，{vehicle}为什么刚刚好？\n\n"
+            f"因为{vehicle}的{selling_text}，恰好能装下这份{emotion}。\n\n"
+            f"{selling_claim}\n\n"
+            f"热闹会过去，但好的产品力不会。"
+        )
+    elif angle_type == "atmosphere":
+        weibo_body = (
+            f"{keyword}的{emotion}，{vehicle}怎么呈现？\n\n"
+            f"不是简单同框，而是把{emotion}融进{scene0}的每一处细节。\n\n"
+            f"{selling_claim}\n\n"
+            f"坐进车里，氛围就对了。"
+        )
+    elif angle_type == "life":
+        weibo_body = (
+            f"{keyword}之后，{vehicle}的一天怎么过？\n\n"
+            f"照常好。{selling_text}，让它在喧嚣之外依然值得被选择。\n\n"
+            f"{selling_claim}\n\n"
+            f"日子不是话题堆出来的，是一辆好车陪出来的。"
+        )
+    elif angle_type == "answer":
+        weibo_body = (
+            f"{keyword}之后，{vehicle}的{image0}是什么答案？\n\n"
+            f"是{selling_text}的集合，是{positioning}对{narrative}的回应。\n\n"
+            f"{selling_claim}\n\n"
+            f"答案不在口号里，在每一次出发里。"
+        )
+    else:
+        weibo_body = (
+            f"{keyword}刷屏，{vehicle}给出了一个自己的表达。\n\n"
+            f"{selling_claim}\n\n"
+            f"好的表达，不是追逐，而是自然发生。"
+        )
 
-    # 车型核心卖点提炼：外观/智能/性能/空间/经济等
-    selling_points = v.get("image", ["品质"])
-    selling_text = "、".join(selling_points[:3]) if len(selling_points) >= 3 else "、".join(selling_points)
-    # 卖点与热点的结合句
-    selling_hook = (
-        f"{vehicle}的{selling_text}，不是凭空蹭{keyword}，"
-        f"而是它本来就有这些能力，恰好和这个话题产生了真实的连接。"
-    )
-
-    # ---- 微博：短图文 thread，强观点、快节奏 ----
     weibo_copy = (
-        f"【{vehicle} × {keyword}】{theme_hook}\n\n"
-        f"{angle_question}\n\n"
-        f"1️⃣ {theme_insight}；{angle_nuance}。\n"
-        f"2️⃣ {theme_product}——{theme_visual}，全都在{scene0}里。\n"
-        f"3️⃣ 核心卖点更稳：{selling_text}，{vehicle}本来就有。\n"
-        f"4️⃣ {theme_cta}。\n\n"
-        f"配图建议：{theme_visual}画面2张 + {vehicle} {scene0}场景图4张 + 外观/内饰/智能细节特写3张\n\n"
-        f"#{safe_keyword}# #{vehicle_key}# #广本车型热点匹配# {' '.join(base_tags)}"
+        f"【{vehicle} × {keyword}｜{theme_tag_line}】\n\n"
+        f"{weibo_body}\n\n"
+        f"配图建议：{theme_visual}画面3张 + {vehicle} {scene0}场景图4张 + 外观/内饰特写2张\n\n"
+        f"#{safe_keyword}# #{vehicle_key}# #广本车型热点匹配# {base_tags}"
     )
-    weibo_tags = f"#{safe_keyword}# #{vehicle_key}# #广本车型热点匹配# {' '.join(base_tags)}"
-    weibo_visual = f"九宫格：{theme_visual}画面2张 + {vehicle} {scene0}场景图4张 + 外观/内饰/智能细节特写3张"
 
-    # ---- 知乎：深度回答，有逻辑、有观点 ----
+    # ---------------- 知乎 ----------------
+    if angle_type == "why":
+        zhihu_body = (
+            f"{keyword}火了，{vehicle}为什么会被提到？\n\n"
+            f"表面上看是一次话题与车型的相遇，本质上是因为{vehicle}的{selling_text}，"
+            f"和{keyword}所代表的{narrative}高度契合。对{audience}来说，"
+            f"{vehicle}不是突然出现的选择，而是当{emotion}被激发时，自然浮现在脑海里的答案。\n\n"
+            f"{selling_claim}\n\n"
+            f"所以，{vehicle}回应的不是{keyword}本身，而是{keyword}背后那群人和那种情绪。"
+        )
+    elif angle_type == "guard":
+        zhihu_body = (
+            f"当{keyword}成为公共话题，品牌该不该跟？\n\n"
+            f"{vehicle}给了一个不一样的示范：它选择守住自己的{scene0}，"
+            f"用{selling_text}去回应，而不是被讨论牵着走。对{audience}来说，"
+            f"这种稳定感本身就是一种价值。\n\n"
+            f"{selling_claim}\n\n"
+            f"真正打动人的品牌表达，往往发生在喧嚣之外。"
+        )
+    elif angle_type == "fit":
+        zhihu_body = (
+            f"为什么说{keyword}和{vehicle}刚刚好？\n\n"
+            f"因为{keyword}唤起的{emotion}，需要一个具体的产品来承接。"
+            f"{vehicle}作为{positioning}，它的{selling_text}正好提供了这个落点。\n\n"
+            f"{selling_claim}\n\n"
+            f"好的品牌沟通，不是硬要把两个东西绑在一起，而是让观众自己觉得：这就是它。"
+        )
+    elif angle_type == "atmosphere":
+        zhihu_body = (
+            f"氛围感这件事，怎么才能落到实处？\n\n"
+            f"{keyword}给了我们一个{emotion}的入口，而{vehicle}用{selling_text}，"
+            f"把这种情绪延伸到了{scene0}的每一个细节里。\n\n"
+            f"{selling_claim}\n\n"
+            f"对{audience}来说，坐进{vehicle}的那一刻，{keyword}就不再只是屏幕上的话题，"
+            f"而是一种可以被体验的氛围。"
+        )
+    elif angle_type == "life":
+        zhihu_body = (
+            f"热闹之外，{vehicle}的日常价值是什么？\n\n"
+            f"{keyword}可能会在一周后淡出讨论，但{audience}对{scene0}的需求不会变。"
+            f"{vehicle}的{selling_text}，正是在这些日常里建立信任的地方。\n\n"
+            f"{selling_claim}\n\n"
+            f"一辆好车不会只活在热闹里，它活在每一次平顺的起步、每一次安心的抵达里。"
+        )
+    elif angle_type == "answer":
+        zhihu_body = (
+            f"{keyword}提出了一个关于{narrative}的问题，{vehicle}的回答是什么？\n\n"
+            f"它的回答是{selling_text}。作为{positioning}，"
+            f"{vehicle}没有停留在口号，而是把这些产品力放进了{scene0}的真实体验中。\n\n"
+            f"{selling_claim}\n\n"
+            f"所以，当{audience}在思考「这个时代需要一辆什么样的车」时，"
+            f"{vehicle}已经用行动给出了答案。"
+        )
+    else:
+        zhihu_body = (
+            f"如何评价{keyword}与{vehicle}的关联？\n\n"
+            f"{keyword}是一个关于{narrative}的社会情绪，而{vehicle}的{selling_text}，"
+            f"恰好能和这个情绪产生真实的对话。对{audience}来说，"
+            f"{vehicle}不是追逐潮流的工具，而是{emotion}的落点。\n\n"
+            f"{selling_claim}"
+        )
+
     zhihu_copy = (
-        f"如何评价「{keyword}」与{vehicle}的这次相遇？\n\n"
-        f"我的回答是：{angle}\n\n"
-        f"{keyword}本质上是一个关于{narrative}的社会情绪。{theme_insight}。"
-        f"所以很多人问，{vehicle}为什么要接这个话题？\n\n"
-        f"其实它没硬蹭。{vehicle}选择从自己的{scene0}出发，用{image0}去回应{keyword}。"
-        f"对{audience}来说，这种回应更像是一种自然的共鸣：{theme_product}。\n\n"
-        f"更进一步说，{selling_hook}\n\n"
-        f"{angle_nuance}。真正好的产品从不追逐热点，它本身就是答案。\n\n"
-        f"{theme_cta}。\n\n"
+        f"{angle}\n\n"
+        f"{zhihu_body}\n\n"
         f"#{safe_keyword}# #{vehicle_key}# #汽车营销#"
     )
-    zhihu_tags = f"#{safe_keyword}# #{vehicle_key}# #汽车营销#"
-    zhihu_visual = f"信息长图1张：{keyword}事件时间线 + {vehicle}核心卖点（{selling_text}）对照；或3-5张{scene0}场景图"
 
-    # ---- 微信公众号：汽车品牌官方长图文，更简洁、更有品牌感 ----
-    wechat_title = angle
-    wechat_lead = (
-        f"{keyword}刷屏。"
-        f"有人看热闹，有人看门道。{vehicle}看到的是：{theme_insight}。"
-    )
+    # ---------------- 微信公众号 ----------------
+    if angle_type == "why":
+        section1 = f"{keyword}刷屏，很多人都在问：这和{vehicle}有什么关系？答案是：{vehicle}的{selling_text}，本就和{keyword}背后的{narrative}同频。"
+        section2 = f"对{audience}来说，{vehicle}不是 suddenly 出现的选择。当{emotion}被激发，他们会自然地想到一辆{positioning}。"
+        section3 = f"{selling_claim}"
+        section4 = f"所以{vehicle}回应的不是{keyword}本身，而是{keyword}背后的那群人，以及他们对{narrative}的真实渴望。"
+    elif angle_type == "guard":
+        section1 = f"{keyword}很热闹，但{vehicle}选择不慌不忙。它回到自己最熟悉的{scene0}，用{selling_text}守住自己的节奏。"
+        section2 = f"对{audience}来说，热闹之外，更重要的是稳定。{vehicle}作为{positioning}，它的价值从来不靠喧哗证明。"
+        section3 = f"{selling_claim}"
+        section4 = f"真正的品牌表达，不需要追逐每一次讨论。{vehicle}相信，产品力本身就是最好的回应。"
+    elif angle_type == "fit":
+        section1 = f"{keyword}火了，{vehicle}刚刚好。不是刻意，而是{vehicle}的{selling_text}，恰好能装下这份{emotion}。"
+        section2 = f"对{audience}而言，{positioning}的出现，让{keyword}从一个屏幕上的话题，变成了一种可以被体验的感觉。"
+        section3 = f"{selling_claim}"
+        section4 = f"热闹会过去，但{vehicle}的{selling_text}会继续陪着你，从讨论走回日常。"
+    elif angle_type == "atmosphere":
+        section1 = f"{keyword}给了我们一种{emotion}的氛围，而{vehicle}把这种氛围延伸到了{scene0}里。"
+        section2 = f"对{audience}来说，坐进{vehicle}的那一刻，{keyword}不再是遥远的屏幕内容，而是触手可及的空间感受。"
+        section3 = f"{selling_claim}"
+        section4 = f"好的氛围，不只是视觉，更是产品力带来的安心与愉悦。"
+    elif angle_type == "life":
+        section1 = f"{keyword}刷屏的时候，{vehicle}的车主可能正在{scene0}。讨论会过去，但日子照常好。"
+        section2 = f"对{audience}来说，{vehicle}的{selling_text}，是生活里不需要解释的确定性。"
+        section3 = f"{selling_claim}"
+        section4 = f"一辆好车的价值，从不取决于它是否被热议，而取决于它是否出现在你需要它的每一次出发里。"
+    elif angle_type == "answer":
+        section1 = f"{keyword}让很多人开始思考{narrative}。{vehicle}用{selling_text}，给出了自己的回答。"
+        section2 = f"作为{positioning}，{vehicle}没有停留在概念，而是把产品力放进了{scene0}的真实体验中。"
+        section3 = f"{selling_claim}"
+        section4 = f"答案不在口号里，在每一次踩下电门、每一次智能交互、每一次安全抵达里。"
+    else:
+        section1 = f"{keyword}刷屏，{vehicle}用自己的方式回应了它。"
+        section2 = f"对{audience}来说，{vehicle}的{selling_text}，让{keyword}的{emotion}有了具体的落点。"
+        section3 = f"{selling_claim}"
+        section4 = f"从产品到体验，{vehicle}都在做同一件事：让好的出行，自然发生。"
+
     wechat_copy = (
-        f"{wechat_title}\n\n"
+        f"{angle}\n\n"
         f"文／广汽本田\n\n"
-        f"{wechat_lead}\n\n"
-        f"01 ｜ 一个问题的答案\n"
-        f"{angle_question}\n\n"
-        f"对{vehicle}来说，这不是蹭热度，而是一次自然的回应。"
-        f"作为{positioning}，它的{scene0}天然能和{keyword}背后的{narrative}情绪站在一起。\n\n"
-        f"02 ｜ {image0}，是回应的方式\n"
-        f"{theme_product}。\n"
-        f"{theme_visual}，这些不是概念，而是{vehicle}带给{audience}的真实体验。\n\n"
-        f"03 ｜ 核心卖点，自有底气\n"
-        f"{selling_hook}\n"
-        f"外观、性能、智能，每一项都是{vehicle}的硬实力。"
-        f"{keyword}让我们重新看见它，而它早已准备好，陪你从热点走回日常。\n\n"
-        f"04 ｜ {theme_cta}\n"
-        f"{keyword}会过去，但一辆好车的价值不会。"
-        f"到店试驾，亲自感受{vehicle}的{selling_text}。\n\n"
+        f"{keyword}刷屏。\n\n"
+        f"01 ｜ {keyword}与{vehicle}\n"
+        f"{section1}\n\n"
+        f"02 ｜ 关于{audience}\n"
+        f"{section2}\n\n"
+        f"03 ｜ 产品力，是底气\n"
+        f"{section3}\n\n"
+        f"04 ｜ 写在最后\n"
+        f"{section4}\n\n"
         f"——\n"
-        f"【互动话题】{angle_question} 欢迎在评论区留言。\n\n"
-        f"点击文末「阅读原文」预约试驾，到店体验{vehicle}的{image0}。\n"
-        f"（文末插入车型高清外观图 / 智能座舱细节 / 动力参数表 / 试驾预约二维码）"
+        f"【互动话题】你怎么看{keyword}与{vehicle}的关联？欢迎在评论区留言。\n\n"
+        f"预约试驾{vehicle}，到店感受{selling_text}。\n"
+        f"（文末插入{vehicle}高清外观图 / 智能座舱细节 / 核心配置表 / 试驾预约二维码）"
     )
-    wechat_tags = f"广本{vehicle_key}｜{keyword}｜{emotion}出行"
-    wechat_visual = f"封面：{vehicle}与{keyword}符号化拼贴，标题居中；内页：外观全景+智能座舱+{scene0}场景+核心卖点（{selling_text}）图解"
 
-    # ---- 小红书：图文笔记，轻松、有 emoji、有 tips ----
-    xhs_title = f"{keyword}刷屏，但{vehicle}这波让我悟了✨"
+    # ---------------- 小红书 ----------------
+    if angle_type == "why":
+        xhs_body = (
+            f"🌟 为什么{keyword}会让{vehicle}被看见？\n"
+            f"因为{vehicle}的{selling_text}，本就和{keyword}背后的{narrative}同频。\n\n"
+            f"🚗 {vehicle}的底气\n"
+            f"{selling_claim}\n\n"
+            f"💡 它回应的不是话题本身，是{emotion}。"
+        )
+    elif angle_type == "guard":
+        xhs_body = (
+            f"🌟 别人聊{keyword}，{vehicle}在做什么？\n"
+            f"守住自己的{scene0}，用{selling_text}稳稳回应。\n\n"
+            f"🚗 {vehicle}的底气\n"
+            f"{selling_claim}\n\n"
+            f"💡 不喧哗，自有声。"
+        )
+    elif angle_type == "fit":
+        xhs_body = (
+            f"🌟 {keyword}火了，{vehicle}为什么刚刚好？\n"
+            f"因为{selling_text}，恰好能装下这份{emotion}。\n\n"
+            f"🚗 {vehicle}的底气\n"
+            f"{selling_claim}\n\n"
+            f"💡 不早不晚，就是这种感觉。"
+        )
+    elif angle_type == "atmosphere":
+        xhs_body = (
+            f"🌟 {keyword}的{emotion}，{vehicle}怎么呈现？\n"
+            f"把它融进{scene0}的每一处细节里。\n\n"
+            f"🚗 {vehicle}的底气\n"
+            f"{selling_claim}\n\n"
+            f"💡 坐进车里，氛围就对了。"
+        )
+    elif angle_type == "life":
+        xhs_body = (
+            f"🌟 {keyword}之后，{vehicle}的一天怎么过？\n"
+            f"照常好。{selling_text}，让日子稳稳地继续。\n\n"
+            f"🚗 {vehicle}的底气\n"
+            f"{selling_claim}\n\n"
+            f"💡 讨论会过去，好车不会。"
+        )
+    elif angle_type == "answer":
+        xhs_body = (
+            f"🌟 {keyword}之后，{vehicle}的答案是什么？\n"
+            f"{selling_text}，全写进{scene0}的体验里。\n\n"
+            f"🚗 {vehicle}的底气\n"
+            f"{selling_claim}\n\n"
+            f"💡 答案不在口号里，在每一次出发里。"
+        )
+    else:
+        xhs_body = (
+            f"🌟 {keyword}刷屏，{vehicle}怎么回应？\n"
+            f"用{selling_text}，给出自己的表达。\n\n"
+            f"🚗 {vehicle}的底气\n"
+            f"{selling_claim}"
+        )
+
     xhs_copy = (
-        f"{xhs_title}\n\n"
+        f"{keyword}刷屏，但{vehicle}这波让我悟了✨\n\n"
         f"姐妹们/兄弟们，{keyword}真的{emotion}了！\n"
-        f"但最让我惊喜的是，{vehicle}的{scene0}居然和这个话题这么搭。\n\n"
-        f"🌟 {angle_question}\n"
-        f"{theme_insight}。{angle_nuance}。\n\n"
-        f"🚗 {vehicle}怎么接？\n"
-        f"它没有硬蹭，而是用{image0}自然回应。\n"
-        f"{theme_product}，{theme_visual}都安排上了。\n\n"
-        f"💡 核心卖点也超稳\n"
-        f"{selling_text}，每一项都是实打实的。\n\n"
+        f"但最让我惊喜的是，{vehicle}的{scene0}和这个话题居然这么搭。\n\n"
+        f"{xhs_body}\n\n"
         f"📸 拍摄 tips\n"
-        f"1️⃣ 封面：{vehicle}外观与{keyword}元素拼贴\n"
-        f"2️⃣ 内页：{scene0}氛围图 + 智能座舱/性能细节特写\n"
-        f"3️⃣ 文案卡：{theme_cta}\n\n"
-        f"#{vehicle_key} #{safe_keyword} #汽车生活 #{emotion}出行 #{narrative} {' '.join(base_tags)} #广本"
+        f"1️⃣ 封面：{vehicle}轿跑外观与{keyword}元素拼贴\n"
+        f"2️⃣ 内页：{scene0}氛围图 + 智能座舱/驾控细节特写\n"
+        f"3️⃣ 文案卡：预约试驾，感受{selling_text}\n\n"
+        f"#{vehicle_key} #{safe_keyword} #汽车生活 #{emotion}出行 #{narrative} {base_tags} #广本"
     )
-    xhs_tags = f"#{vehicle_key} #{safe_keyword} #汽车生活 #{emotion}出行 {' '.join(base_tags)}"
-    xhs_visual = f"封面：{vehicle}外观与{keyword}元素拼贴；内页：{scene0}氛围图+外观/智能/性能细节特写+金句卡"
 
     copies = [
         {
             "平台": "微博",
             "形式": "短图文 / 九宫格 thread",
             "文案": weibo_copy,
-            "话题标签": weibo_tags,
-            "配图建议": weibo_visual,
+            "话题标签": f"#{safe_keyword}# #{vehicle_key}# #广本车型热点匹配# {base_tags}",
+            "配图建议": f"九宫格：{theme_visual}画面3张 + {vehicle} {scene0}场景图4张 + 外观/内饰特写2张",
         },
         {
             "平台": "知乎",
             "形式": "回答 / 深度讨论",
             "文案": zhihu_copy,
-            "话题标签": zhihu_tags,
-            "配图建议": zhihu_visual,
+            "话题标签": f"#{safe_keyword}# #{vehicle_key}# #汽车营销#",
+            "配图建议": f"信息长图1张：{keyword}与{vehicle}核心卖点（{selling_text}）对照；或3-5张{scene0}场景图",
         },
         {
             "平台": "微信公众号",
             "形式": "长图文",
             "文案": wechat_copy,
-            "话题标签": wechat_tags,
-            "配图建议": wechat_visual,
+            "话题标签": f"广本{vehicle_key}｜{keyword}｜{emotion}出行",
+            "配图建议": f"封面：{vehicle}轿跑外观与{keyword}符号化拼贴；内页：外观全景+智能座舱+{scene0}场景+核心卖点（{selling_text}）图解",
         },
         {
             "平台": "小红书",
             "形式": "图文笔记",
             "文案": xhs_copy,
-            "话题标签": xhs_tags,
-            "配图建议": xhs_visual,
+            "话题标签": f"#{vehicle_key} #{safe_keyword} #汽车生活 #{emotion}出行 {base_tags}",
+            "配图建议": f"封面：{vehicle}轿跑外观与{keyword}元素拼贴；内页：{scene0}氛围图+外观/智能/驾控细节特写+金句卡",
         },
     ]
     return copies
@@ -969,19 +1101,19 @@ def generate_platform_copies(topic: Dict, vehicle_key: str = None) -> List[Dict]
             "形式": "短视频",
             "文案": f"当{keyword}刷屏，{vehicle}车主的{scene0}有了新的故事。#广本{vehicle_key} #{keyword} #{emotion}出行",
             "话题标签": f"#{vehicle_key} #{keyword.replace(' ', '')} #{narrative} #广本",
-            "配图建议": f"15-30秒短视频，前3秒用{keyword}热点画面抓眼，中段切{vehicle} {scene0}",
+            "配图建议": f"15-30秒短视频，前3秒用{keyword}讨论画面抓眼，中段切{vehicle} {scene0}",
         },
         {
             "平台": "微博",
             "形式": "图文",
             "文案": f"【{vehicle} × {keyword}】{narrative}的另一种表达，也许就是{image0}。你怎么看？",
             "话题标签": f"#{keyword}# #{vehicle_key}# #广本车型热点匹配#",
-            "配图建议": f"九宫格：热点现场图2张 + {vehicle} {scene0}场景图5张 + 车型特写2张",
+            "配图建议": f"九宫格：话题现场图2张 + {vehicle} {scene0}场景图5张 + 车型特写2张",
         },
         {
             "平台": "小红书",
             "形式": "图文笔记",
-            "文案": f"姐妹们/兄弟们，{keyword}真的{emotion}了！{vehicle}的{scene0}让我瞬间get到{image0}，这波联名我悟了✨",
+            "文案": f"姐妹们/兄弟们，{keyword}真的{emotion}了！{vehicle}的{scene0}让我瞬间get到{image0}，这种关联我悟了✨",
             "话题标签": f"#{vehicle_key} #{keyword.replace(' ', '')} #汽车生活 #{emotion}出行",
             "配图建议": f"封面：{vehicle}与{keyword}元素拼贴；内页：{scene0}氛围图+细节特写",
         },
@@ -1023,7 +1155,7 @@ def generate_visual_guide(topic: Dict, vehicle_key: str = None) -> Dict:
         "拍摄/设计建议": [
             f"用 {narrative} 的叙事基调组织画面节奏",
             f"把 {v['image'][0] if v['image'] else '车型'} 作为情绪落点",
-            "避免直接蹭争议人物/事件肖像，使用符号化表达",
+            "避免直接使用争议人物/事件肖像，使用符号化表达",
             "视频前3秒必须出现热点关键词或画面，降低跳出率",
         ],
     }
