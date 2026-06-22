@@ -549,81 +549,89 @@ def _theme_pack(
     # 中间镜头字幕：按主题差异化，避免所有角度都一样
     if "life" in t:
         hot20a_sub = f"早上刷到{keyword}，晚上它还在热搜上。"
+        hot20b_sub = f"一条热搜，一杯咖啡，一个普通的早晨。"
         hot30a_sub = f"你有没有发现，{keyword}正在改变我们过日子的方式？"
         hot30b_sub = f"有人说这是{emotion}，有人说这就是普通人的日常。"
         veh20a_sub = f"{vehicle}的{scene0}，是日常里最稳的确定性。"
         veh20b_sub = f"热点会过去，但好日子的细节不会。"
-        veh30a_sub = angle
+        veh30a_sub = f"生活里的{emotion}，{vehicle}用{image0}稳稳接住了。"
         veh30b_sub = f"{vehicle}用{image0}，接住这份生活里的{emotion}。"
         pro20_sub = f"{vehicle} × {keyword}｜{image0}，过好每一天"
         pro30a_sub = f"{vehicle}｜{image0}，日子照常好"
     elif "space" in t:
         hot20a_sub = f"当{keyword}点亮夜空，有人看见了未来。"
+        hot20b_sub = f"火箭升空的瞬间，有人想的是远方。"
         hot30a_sub = f"你有没有想过，{keyword}为什么会让我们抬头？"
         hot30b_sub = f"有人说这是{emotion}，有人说这就是对未知的向往。"
         veh20a_sub = f"{vehicle}的{scene0}，装得下一片星空。"
         veh20b_sub = f"我们不想上天，只想把星舰的浪漫带到地面。"
-        veh30a_sub = angle
+        veh30a_sub = f"从星空到地面，{vehicle}的探索没有停。"
         veh30b_sub = f"{vehicle}用{image0}，接住这份仰望星空的{emotion}。"
         pro20_sub = f"{vehicle} × {keyword}｜把星空，装进{scene0}"
         pro30a_sub = f"{vehicle}｜{image0}，像星图一样指引方向"
     elif "ai" in t:
         hot20a_sub = f"{keyword}刷屏时，AI已经读完了所有评论。"
+        hot20b_sub = f"AI 回答得很快，但我们真正想问的是什么？"
         hot30a_sub = f"你有没有发现，{keyword}正在让机器变得更像人？"
         hot30b_sub = f"有人说这是{emotion}，有人说这只是算法的胜利。"
         veh20a_sub = f"{vehicle}的{scene0}，AI比你更懂怎么走。"
         veh20b_sub = f"不追风口，只做一个能听懂你的座舱。"
-        veh30a_sub = angle
+        veh30a_sub = f"AI能读懂数据，{vehicle}能读懂你要去哪。"
         veh30b_sub = f"{vehicle}用{image0}，接住这份被智能理解的{emotion}。"
         pro20_sub = f"{vehicle} × {keyword}｜{image0}，懂你说的和没说的"
         pro30a_sub = f"{vehicle}｜{image0}，比想象更懂你"
     elif "future" in t:
         hot20a_sub = f"{keyword}不是终点，是下一次进化的起点。"
+        hot20b_sub = f"屏幕里的未来，正在变成窗外的现实。"
         hot30a_sub = f"你有没有发现，{keyword}正在重新定义我们的出行？"
         hot30b_sub = f"有人说这是{emotion}，有人说这就是未来的样子。"
         veh20a_sub = f"{vehicle}的{scene0}，是通向未来的入口。"
         veh20b_sub = f"不模仿未来，{vehicle}正在创造它。"
-        veh30a_sub = angle
+        veh30a_sub = f"未来不是等来的，是{vehicle}开出来的。"
         veh30b_sub = f"{vehicle}用{image0}，接住这份对未来的{emotion}。"
         pro20_sub = f"{vehicle} × {keyword}｜{image0}，就是未来"
         pro30a_sub = f"{vehicle}｜{image0}，下一个时代的答案"
     elif "sport" in t:
         hot20a_sub = f"{keyword}火了，因为热血永远不过时。"
+        hot20b_sub = f"冠军只有一个，但热血属于每个追它的人。"
         hot30a_sub = f"你有没有发现，{keyword}让我们的心跳都变快了？"
         hot30b_sub = f"有人说这是{emotion}，有人说这就是竞技的魅力。"
         veh20a_sub = f"{vehicle}的{scene0}，能装下这份热血。"
         veh20b_sub = f"冠军只是结果，{vehicle}的赛道基因一直都在。"
-        veh30a_sub = angle
+        veh30a_sub = f"赛道上的{emotion}，{vehicle}用{image0}稳稳接住了。"
         veh30b_sub = f"{vehicle}用{image0}，接住这份赛场上的{emotion}。"
         pro20_sub = f"{vehicle} × {keyword}｜{image0}，热血全开"
         pro30a_sub = f"{vehicle}｜{image0}，为速度而生"
     elif "family" in t:
         hot20a_sub = f"{keyword}刷屏，但家人的消息更值得置顶。"
+        hot20b_sub = f"热闹是别人的，家人的消息才是置顶。"
         hot30a_sub = f"你有没有发现，{keyword}让我们更想守住重要的人？"
         hot30b_sub = f"有人说这是{emotion}，有人说这就是生活的重量。"
         veh20a_sub = f"{vehicle}的{scene0}，装得下一家人的{emotion}。"
         veh20b_sub = f"守护家人，从来不是话题，而是本能。"
-        veh30a_sub = angle
+        veh30a_sub = f"对家人的{emotion}，{vehicle}用{image0}稳稳接住了。"
         veh30b_sub = f"{vehicle}用{image0}，接住这份对家人的{emotion}。"
         pro20_sub = f"{vehicle} × {keyword}｜{image0}，守护每一程"
         pro30a_sub = f"{vehicle}｜{image0}，给家人稳稳的幸福"
     elif "life" in t:
         hot20a_sub = f"早上刷到{keyword}，晚上它还在热搜上。"
+        hot20b_sub = f"一条热搜，一杯咖啡，一个普通的早晨。"
         hot30a_sub = f"你有没有发现，{keyword}正在改变我们过日子的方式？"
         hot30b_sub = f"有人说这是{emotion}，有人说这就是普通人的日常。"
         veh20a_sub = f"{vehicle}的{scene0}，是日常里最稳的确定性。"
         veh20b_sub = f"热点会过去，但好日子的细节不会。"
-        veh30a_sub = angle
+        veh30a_sub = f"生活里的{emotion}，{vehicle}用{image0}稳稳接住了。"
         veh30b_sub = f"{vehicle}用{image0}，接住这份生活里的{emotion}。"
         pro20_sub = f"{vehicle} × {keyword}｜{image0}，过好每一天"
         pro30a_sub = f"{vehicle}｜{image0}，日子照常好"
     else:
         hot20a_sub = f"最近，{keyword}火了。"
+        hot20b_sub = f"话题在刷屏，而真正重要的是你怎么看它。"
         hot30a_sub = f"你有没有发现，{keyword}正在改变我们的情绪？"
         hot30b_sub = f"有人说这是{emotion}，有人说这就是生活。"
         veh20a_sub = f"{vehicle}的{scene0}，刚好装得下这份{emotion}。"
         veh20b_sub = f"热度会过去，{vehicle}的故事一直在发生。"
-        veh30a_sub = angle
+        veh30a_sub = f"当{keyword}成为情绪，{vehicle}用{image0}给出了回应。"
         veh30b_sub = f"{vehicle}用{image0}，接住这份{emotion}。"
         pro20_sub = f"{vehicle} × {keyword}｜{image0}，触手可及"
         pro30a_sub = f"{vehicle}｜{positioning}"
@@ -665,6 +673,7 @@ def _theme_pack(
         "hot20a_sub": hot20a_sub,
         "hot20b_v": hot20b_v,
         "hot20b_s": hot20b_s,
+        "hot20b_sub": hot20b_sub,
         "veh20a_v": veh20a_v,
         "veh20a_s": veh20a_s,
         "veh20a_sub": veh20a_sub,
@@ -795,7 +804,7 @@ def generate_video_script(topic: Dict, vehicle_key: str = None, angle: str = Non
                             "镜号": 2,
                             "时长": "3-6秒",
                             "画面描述": p["hot20b_v"],
-                            "台词/字幕": angle,
+                            "台词/字幕": p["hot20b_sub"],
                             "音效/音乐": p["hot20b_s"],
                         },
                     ],
@@ -1033,21 +1042,56 @@ def generate_graphic_copies(topic: Dict, vehicle_key: str = None, angle: str = N
         theme_visual = f"{field}氛围、{scene0}、{image0}细节"
         base_tags = f"#{field} #{narrative} #汽车品牌"
 
-    # 卖点强调句（按角度类型差异化，避免出现“蹭热点/追话题”等负面表述）
+    # 卖点强调句（按角度类型 + 平台差异化，避免跨平台重复）
     if angle_type == "why":
-        selling_claim = f"{vehicle}的{selling_text}，恰好能回应{keyword}背后的{narrative}。"
+        selling_claims = [
+            f"{vehicle}的{selling_text}，恰好能回应{keyword}背后的{narrative}。",
+            f"从{selling_text}来看，{vehicle}和{keyword}指向的是同一种{narrative}。",
+            f"{vehicle}没有解释自己为什么出现，它只是用{selling_text}给出了回应。",
+            f"当{keyword}点燃好奇，{vehicle}的{selling_text}正好承接了这份追问。",
+        ]
     elif angle_type == "guard":
-        selling_claim = f"当外界被{keyword}吸引，{vehicle}选择用{selling_text}守住自己的节奏——不喧哗，自有声。"
+        selling_claims = [
+            f"当外界被{keyword}吸引，{vehicle}选择用{selling_text}守住自己的节奏——不喧哗，自有声。",
+            f"{vehicle}没有跟进{keyword}的喧嚣，而是回到{scene0}，用{selling_text}稳住自己的表达。",
+            f"热闹是别人的，{vehicle}只负责用{selling_text}把{scene0}做好。",
+            f"在{keyword}的讨论里，{vehicle}选择用{selling_text}守好自己的位置。",
+        ]
     elif angle_type == "fit":
-        selling_claim = f"{keyword}的火，和{vehicle}的{selling_text}相遇，不早不晚，刚刚好。"
+        selling_claims = [
+            f"{keyword}的火，和{vehicle}的{selling_text}相遇，不早不晚，刚刚好。",
+            f"{keyword}需要的不是追逐，而是一个刚好能装下它的产品——比如{vehicle}的{selling_text}。",
+            f"{vehicle}的{selling_text}，让{keyword}的{emotion}有了一个具体的落点。",
+            f"不是{vehicle}蹭上了{keyword}，而是{selling_text}刚好接住了这份情绪。",
+        ]
     elif angle_type == "atmosphere":
-        selling_claim = f"{keyword}的{emotion}，被{vehicle}的{selling_text}转化成可触摸的{scene0}氛围。"
+        selling_claims = [
+            f"{keyword}的{emotion}，被{vehicle}的{selling_text}转化成可触摸的{scene0}氛围。",
+            f"坐进{vehicle}，{keyword}带来的{emotion}就落在了{selling_text}的细节里。",
+            f"{vehicle}用{selling_text}，把{keyword}的{emotion}铺进了{scene0}的每一寸空间。",
+            f"{keyword}是情绪的入口，{vehicle}的{selling_text}是氛围的落点。",
+        ]
     elif angle_type == "life":
-        selling_claim = f"{keyword}是当下的热闹，{vehicle}的{selling_text}是日子里的确定感。"
+        selling_claims = [
+            f"{keyword}是当下的热闹，{vehicle}的{selling_text}是日子里的确定感。",
+            f"一周后{keyword}可能淡出，但{vehicle}的{selling_text}会继续陪在{scene0}里。",
+            f"对日常来说，{vehicle}的{selling_text}比{keyword}更持久。",
+            f"{keyword}会过去，{vehicle}用{selling_text}把日子拉回它本来的样子。",
+        ]
     elif angle_type == "answer":
-        selling_claim = f"{keyword}提出了问题，{vehicle}用{selling_text}给出了自己的回答。"
+        selling_claims = [
+            f"{keyword}提出了问题，{vehicle}用{selling_text}给出了自己的回答。",
+            f"关于{narrative}，{vehicle}的{selling_text}就是它的答案。",
+            f"{vehicle}没有停留在概念，而是用{selling_text}把回答写进了{scene0}。",
+            f"{keyword}问的是趋势，{vehicle}用{selling_text}答的是体验。",
+        ]
     else:
-        selling_claim = f"{vehicle}的{selling_text}，让它和{keyword}之间产生了一种自然的连接。"
+        selling_claims = [
+            f"{vehicle}的{selling_text}，让它和{keyword}之间产生了一种自然的连接。",
+            f"{keyword}和{vehicle}的{selling_text}之间，有一种不需要解释的契合。",
+            f"当{keyword}成为情绪，{vehicle}用{selling_text}给出了自己的表达。",
+            f"{vehicle}没有追逐{keyword}，它的{selling_text}本就在回应同一种情绪。",
+        ]
 
     # ---------------- 微博 ----------------
     if angle_type == "why":
@@ -1055,7 +1099,7 @@ def generate_graphic_copies(topic: Dict, vehicle_key: str = None, angle: str = N
             f"为什么{keyword}会让{vehicle}被重新看见？\n\n"
             f"因为{vehicle}的{selling_text}，"
             f"本就和{keyword}背后的{narrative}同频。\n\n"
-            f"{selling_claim}\n\n"
+            f"{selling_claims[0]}\n\n"
             f"这不是强行关联，而是产品力本身就在回应同一种情绪。"
         )
     elif angle_type == "guard":
@@ -1063,41 +1107,41 @@ def generate_graphic_copies(topic: Dict, vehicle_key: str = None, angle: str = N
             f"别人都在聊{keyword}，{vehicle}在做什么？\n\n"
             f"它没有跟着喧哗，而是回到自己最熟悉的{scene0}，"
             f"用{selling_text}守住一份稳定。\n\n"
-            f"{selling_claim}\n\n"
+            f"{selling_claims[0]}\n\n"
             f"真正的品牌表达，从来不需要大声。"
         )
     elif angle_type == "fit":
         weibo_body = (
             f"{keyword}火了，{vehicle}为什么刚刚好？\n\n"
             f"因为{vehicle}的{selling_text}，恰好能装下这份{emotion}。\n\n"
-            f"{selling_claim}\n\n"
+            f"{selling_claims[0]}\n\n"
             f"热闹会过去，但好的产品力不会。"
         )
     elif angle_type == "atmosphere":
         weibo_body = (
             f"{keyword}的{emotion}，{vehicle}怎么呈现？\n\n"
             f"不是简单同框，而是把{emotion}融进{scene0}的每一处细节。\n\n"
-            f"{selling_claim}\n\n"
+            f"{selling_claims[0]}\n\n"
             f"坐进车里，氛围就对了。"
         )
     elif angle_type == "life":
         weibo_body = (
             f"{keyword}之后，{vehicle}的一天怎么过？\n\n"
             f"照常好。{selling_text}，让它在喧嚣之外依然值得被选择。\n\n"
-            f"{selling_claim}\n\n"
+            f"{selling_claims[0]}\n\n"
             f"日子不是话题堆出来的，是一辆好车陪出来的。"
         )
     elif angle_type == "answer":
         weibo_body = (
             f"{keyword}之后，{vehicle}的{image0}是什么答案？\n\n"
             f"是{selling_text}的集合，是{positioning}对{narrative}的回应。\n\n"
-            f"{selling_claim}\n\n"
+            f"{selling_claims[0]}\n\n"
             f"答案不在口号里，在每一次出发里。"
         )
     else:
         weibo_body = (
             f"{keyword}刷屏，{vehicle}给出了一个自己的表达。\n\n"
-            f"{selling_claim}\n\n"
+            f"{selling_claims[0]}\n\n"
             f"好的表达，不是追逐，而是自然发生。"
         )
 
@@ -1115,7 +1159,7 @@ def generate_graphic_copies(topic: Dict, vehicle_key: str = None, angle: str = N
             f"表面上看是一次话题与车型的相遇，本质上是因为{vehicle}的{selling_text}，"
             f"和{keyword}所代表的{narrative}高度契合。对{audience}来说，"
             f"{vehicle}不是突然出现的选择，而是当{emotion}被激发时，自然浮现在脑海里的答案。\n\n"
-            f"{selling_claim}\n\n"
+            f"{selling_claims[1]}\n\n"
             f"所以，{vehicle}回应的不是{keyword}本身，而是{keyword}背后那群人和那种情绪。"
         )
     elif angle_type == "guard":
@@ -1124,7 +1168,7 @@ def generate_graphic_copies(topic: Dict, vehicle_key: str = None, angle: str = N
             f"{vehicle}给了一个不一样的示范：它选择守住自己的{scene0}，"
             f"用{selling_text}去回应，而不是被讨论牵着走。对{audience}来说，"
             f"这种稳定感本身就是一种价值。\n\n"
-            f"{selling_claim}\n\n"
+            f"{selling_claims[1]}\n\n"
             f"真正打动人的品牌表达，往往发生在喧嚣之外。"
         )
     elif angle_type == "fit":
@@ -1132,7 +1176,7 @@ def generate_graphic_copies(topic: Dict, vehicle_key: str = None, angle: str = N
             f"为什么说{keyword}和{vehicle}刚刚好？\n\n"
             f"因为{keyword}唤起的{emotion}，需要一个具体的产品来承接。"
             f"{vehicle}作为{positioning}，它的{selling_text}正好提供了这个落点。\n\n"
-            f"{selling_claim}\n\n"
+            f"{selling_claims[1]}\n\n"
             f"好的品牌沟通，不是硬要把两个东西绑在一起，而是让观众自己觉得：这就是它。"
         )
     elif angle_type == "atmosphere":
@@ -1140,7 +1184,7 @@ def generate_graphic_copies(topic: Dict, vehicle_key: str = None, angle: str = N
             f"氛围感这件事，怎么才能落到实处？\n\n"
             f"{keyword}给了我们一个{emotion}的入口，而{vehicle}用{selling_text}，"
             f"把这种情绪延伸到了{scene0}的每一个细节里。\n\n"
-            f"{selling_claim}\n\n"
+            f"{selling_claims[1]}\n\n"
             f"对{audience}来说，坐进{vehicle}的那一刻，{keyword}就不再只是屏幕上的话题，"
             f"而是一种可以被体验的氛围。"
         )
@@ -1149,7 +1193,7 @@ def generate_graphic_copies(topic: Dict, vehicle_key: str = None, angle: str = N
             f"热闹之外，{vehicle}的日常价值是什么？\n\n"
             f"{keyword}可能会在一周后淡出讨论，但{audience}对{scene0}的需求不会变。"
             f"{vehicle}的{selling_text}，正是在这些日常里建立信任的地方。\n\n"
-            f"{selling_claim}\n\n"
+            f"{selling_claims[1]}\n\n"
             f"一辆好车不会只活在热闹里，它活在每一次平顺的起步、每一次安心的抵达里。"
         )
     elif angle_type == "answer":
@@ -1157,7 +1201,7 @@ def generate_graphic_copies(topic: Dict, vehicle_key: str = None, angle: str = N
             f"{keyword}提出了一个关于{narrative}的问题，{vehicle}的回答是什么？\n\n"
             f"它的回答是{selling_text}。作为{positioning}，"
             f"{vehicle}没有停留在口号，而是把这些产品力放进了{scene0}的真实体验中。\n\n"
-            f"{selling_claim}\n\n"
+            f"{selling_claims[1]}\n\n"
             f"所以，当{audience}在思考「这个时代需要一辆什么样的车」时，"
             f"{vehicle}已经用行动给出了答案。"
         )
@@ -1167,7 +1211,7 @@ def generate_graphic_copies(topic: Dict, vehicle_key: str = None, angle: str = N
             f"{keyword}是一个关于{narrative}的社会情绪，而{vehicle}的{selling_text}，"
             f"恰好能和这个情绪产生真实的对话。对{audience}来说，"
             f"{vehicle}不是追逐潮流的工具，而是{emotion}的落点。\n\n"
-            f"{selling_claim}"
+            f"{selling_claims[1]}"
         )
 
     zhihu_copy = (
@@ -1180,37 +1224,37 @@ def generate_graphic_copies(topic: Dict, vehicle_key: str = None, angle: str = N
     if angle_type == "why":
         section1 = f"{keyword}刷屏，很多人都在问：这和{vehicle}有什么关系？答案是：{vehicle}的{selling_text}，本就和{keyword}背后的{narrative}同频。"
         section2 = f"对{audience}来说，{vehicle}不是 suddenly 出现的选择。当{emotion}被激发，他们会自然地想到一辆{positioning}。"
-        section3 = f"{selling_claim}"
+        section3 = f"{selling_claims[2]}"
         section4 = f"所以{vehicle}回应的不是{keyword}本身，而是{keyword}背后的那群人，以及他们对{narrative}的真实渴望。"
     elif angle_type == "guard":
         section1 = f"{keyword}很热闹，但{vehicle}选择不慌不忙。它回到自己最熟悉的{scene0}，用{selling_text}守住自己的节奏。"
         section2 = f"对{audience}来说，热闹之外，更重要的是稳定。{vehicle}作为{positioning}，它的价值从来不靠喧哗证明。"
-        section3 = f"{selling_claim}"
+        section3 = f"{selling_claims[2]}"
         section4 = f"真正的品牌表达，不需要追逐每一次讨论。{vehicle}相信，产品力本身就是最好的回应。"
     elif angle_type == "fit":
         section1 = f"{keyword}火了，{vehicle}刚刚好。不是刻意，而是{vehicle}的{selling_text}，恰好能装下这份{emotion}。"
         section2 = f"对{audience}而言，{positioning}的出现，让{keyword}从一个屏幕上的话题，变成了一种可以被体验的感觉。"
-        section3 = f"{selling_claim}"
+        section3 = f"{selling_claims[2]}"
         section4 = f"热闹会过去，但{vehicle}的{selling_text}会继续陪着你，从讨论走回日常。"
     elif angle_type == "atmosphere":
         section1 = f"{keyword}给了我们一种{emotion}的氛围，而{vehicle}把这种氛围延伸到了{scene0}里。"
         section2 = f"对{audience}来说，坐进{vehicle}的那一刻，{keyword}不再是遥远的屏幕内容，而是触手可及的空间感受。"
-        section3 = f"{selling_claim}"
+        section3 = f"{selling_claims[2]}"
         section4 = f"好的氛围，不只是视觉，更是产品力带来的安心与愉悦。"
     elif angle_type == "life":
         section1 = f"{keyword}刷屏的时候，{vehicle}的车主可能正在{scene0}。讨论会过去，但日子照常好。"
         section2 = f"对{audience}来说，{vehicle}的{selling_text}，是生活里不需要解释的确定性。"
-        section3 = f"{selling_claim}"
+        section3 = f"{selling_claims[2]}"
         section4 = f"一辆好车的价值，从不取决于它是否被热议，而取决于它是否出现在你需要它的每一次出发里。"
     elif angle_type == "answer":
         section1 = f"{keyword}让很多人开始思考{narrative}。{vehicle}用{selling_text}，给出了自己的回答。"
         section2 = f"作为{positioning}，{vehicle}没有停留在概念，而是把产品力放进了{scene0}的真实体验中。"
-        section3 = f"{selling_claim}"
+        section3 = f"{selling_claims[2]}"
         section4 = f"答案不在口号里，在每一次踩下电门、每一次智能交互、每一次安全抵达里。"
     else:
         section1 = f"{keyword}刷屏，{vehicle}用自己的方式回应了它。"
         section2 = f"对{audience}来说，{vehicle}的{selling_text}，让{keyword}的{emotion}有了具体的落点。"
-        section3 = f"{selling_claim}"
+        section3 = f"{selling_claims[2]}"
         section4 = f"从产品到体验，{vehicle}都在做同一件事：让好的出行，自然发生。"
 
     wechat_copy = (
@@ -1237,7 +1281,7 @@ def generate_graphic_copies(topic: Dict, vehicle_key: str = None, angle: str = N
             f"🌟 为什么{keyword}会让{vehicle}被看见？\n"
             f"因为{vehicle}的{selling_text}，本就和{keyword}背后的{narrative}同频。\n\n"
             f"🚗 {vehicle}的底气\n"
-            f"{selling_claim}\n\n"
+            f"{selling_claims[3]}\n\n"
             f"💡 它回应的不是话题本身，是{emotion}。"
         )
     elif angle_type == "guard":
@@ -1245,7 +1289,7 @@ def generate_graphic_copies(topic: Dict, vehicle_key: str = None, angle: str = N
             f"🌟 别人聊{keyword}，{vehicle}在做什么？\n"
             f"守住自己的{scene0}，用{selling_text}稳稳回应。\n\n"
             f"🚗 {vehicle}的底气\n"
-            f"{selling_claim}\n\n"
+            f"{selling_claims[3]}\n\n"
             f"💡 不喧哗，自有声。"
         )
     elif angle_type == "fit":
@@ -1253,7 +1297,7 @@ def generate_graphic_copies(topic: Dict, vehicle_key: str = None, angle: str = N
             f"🌟 {keyword}火了，{vehicle}为什么刚刚好？\n"
             f"因为{selling_text}，恰好能装下这份{emotion}。\n\n"
             f"🚗 {vehicle}的底气\n"
-            f"{selling_claim}\n\n"
+            f"{selling_claims[3]}\n\n"
             f"💡 不早不晚，就是这种感觉。"
         )
     elif angle_type == "atmosphere":
@@ -1261,7 +1305,7 @@ def generate_graphic_copies(topic: Dict, vehicle_key: str = None, angle: str = N
             f"🌟 {keyword}的{emotion}，{vehicle}怎么呈现？\n"
             f"把它融进{scene0}的每一处细节里。\n\n"
             f"🚗 {vehicle}的底气\n"
-            f"{selling_claim}\n\n"
+            f"{selling_claims[3]}\n\n"
             f"💡 坐进车里，氛围就对了。"
         )
     elif angle_type == "life":
@@ -1269,7 +1313,7 @@ def generate_graphic_copies(topic: Dict, vehicle_key: str = None, angle: str = N
             f"🌟 {keyword}之后，{vehicle}的一天怎么过？\n"
             f"照常好。{selling_text}，让日子稳稳地继续。\n\n"
             f"🚗 {vehicle}的底气\n"
-            f"{selling_claim}\n\n"
+            f"{selling_claims[3]}\n\n"
             f"💡 讨论会过去，好车不会。"
         )
     elif angle_type == "answer":
@@ -1277,7 +1321,7 @@ def generate_graphic_copies(topic: Dict, vehicle_key: str = None, angle: str = N
             f"🌟 {keyword}之后，{vehicle}的答案是什么？\n"
             f"{selling_text}，全写进{scene0}的体验里。\n\n"
             f"🚗 {vehicle}的底气\n"
-            f"{selling_claim}\n\n"
+            f"{selling_claims[3]}\n\n"
             f"💡 答案不在口号里，在每一次出发里。"
         )
     else:
@@ -1285,7 +1329,7 @@ def generate_graphic_copies(topic: Dict, vehicle_key: str = None, angle: str = N
             f"🌟 {keyword}刷屏，{vehicle}怎么回应？\n"
             f"用{selling_text}，给出自己的表达。\n\n"
             f"🚗 {vehicle}的底气\n"
-            f"{selling_claim}"
+            f"{selling_claims[3]}"
         )
 
     xhs_copy = (
