@@ -13,6 +13,9 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 import streamlit.components.v1 as components
+from docx import Document
+from docx.shared import Inches, Pt
+from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 from PIL import Image
 from wordcloud import WordCloud
 
@@ -653,6 +656,105 @@ def _graphic_copies_to_markdown(label: str, copies: list) -> str:
     return "\n".join(lines)
 
 
+def _video_scripts_to_docx(label: str, scripts: list) -> bytes:
+    """把结构化视频分镜脚本转成 Word 文档二进制内容。"""
+    angle_text = label.split("：", 1)[-1] if "：" in label else label
+    doc = Document()
+
+    title = doc.add_heading(f"视频分镜脚本：{angle_text}", level=1)
+    title.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
+
+    is_structured = (
+        isinstance(scripts, list)
+        and len(scripts) > 0
+        and isinstance(scripts[0], dict)
+        and "acts" in scripts[0]
+    )
+
+    if is_structured:
+        for d in scripts:
+            doc.add_heading(f"{d['时长']}｜{d['结构说明']}", level=2)
+            doc.add_paragraph(f"适合场景：{d['适合场景']}")
+            doc.add_paragraph()
+
+            table = doc.add_table(rows=1, cols=6)
+            table.style = "Light Grid Accent 1"
+            hdr_cells = table.rows[0].cells
+            headers = ["环节", "镜号", "时长", "画面描述", "台词/字幕", "音效/音乐"]
+            for i, h in enumerate(headers):
+                hdr_cells[i].text = h
+                for paragraph in hdr_cells[i].paragraphs:
+                    for run in paragraph.runs:
+                        run.font.bold = True
+
+            for act in d["acts"]:
+                for shot in act["shots"]:
+                    row_cells = table.add_row().cells
+                    row_cells[0].text = act["环节"]
+                    row_cells[1].text = str(shot["镜号"])
+                    row_cells[2].text = shot["时长"]
+                    row_cells[3].text = shot["画面描述"]
+                    row_cells[4].text = shot["台词/字幕"]
+                    row_cells[5].text = shot["音效/音乐"]
+
+            doc.add_paragraph()
+    else:
+        # 兼容旧版平铺 list
+        table = doc.add_table(rows=1, cols=4)
+        table.style = "Light Grid Accent 1"
+        hdr_cells = table.rows[0].cells
+        headers = ["平台", "文案", "话题标签", "配图建议"]
+        for i, h in enumerate(headers):
+            hdr_cells[i].text = h
+            for paragraph in hdr_cells[i].paragraphs:
+                for run in paragraph.runs:
+                    run.font.bold = True
+        for s in scripts:
+            if isinstance(s, dict):
+                row_cells = table.add_row().cells
+                row_cells[0].text = str(s.get("平台", ""))
+                row_cells[1].text = str(s.get("文案", ""))
+                row_cells[2].text = str(s.get("话题标签", ""))
+                row_cells[3].text = str(s.get("配图建议", ""))
+
+    buffer = io.BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+    return buffer.getvalue()
+
+
+def _graphic_copies_to_docx(label: str, copies: list) -> bytes:
+    """把多平台图文文案转成 Word 文档二进制内容。"""
+    angle_text = label.split("：", 1)[-1] if "：" in label else label
+    doc = Document()
+
+    title = doc.add_heading(f"图文选题发布文案：{angle_text}", level=1)
+    title.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
+
+    for c in copies:
+        if not isinstance(c, dict):
+            continue
+        platform = c.get("平台", "平台")
+        form = c.get("形式", "")
+        heading = f"{platform}" + (f"（{form}）" if form else "")
+        doc.add_heading(heading, level=2)
+
+        for key, value in c.items():
+            if key in ("平台",):
+                continue
+            p = doc.add_paragraph()
+            run = p.add_run(f"{key}：")
+            run.bold = True
+            p.add_run(str(value))
+
+        doc.add_paragraph()
+
+    buffer = io.BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+    return buffer.getvalue()
+
+
 def _render_video_angle(label: str, scripts: list):
     """渲染单个视频角度的 15s/20s/30s 分镜"""
     # 去掉前缀 "角度N："，只保留角度文本
@@ -660,18 +762,19 @@ def _render_video_angle(label: str, scripts: list):
     st.markdown(f"**📌 内容角度**：{angle_text}")
 
     md_text = _video_scripts_to_markdown(label, scripts)
+    docx_bytes = _video_scripts_to_docx(label, scripts)
     dl_col, copy_col = st.columns([1, 1])
     with dl_col:
         st.download_button(
-            label="📥 下载 (.md)",
-            data=md_text.encode("utf-8"),
-            file_name=f"视频分镜脚本_{angle_text[:20]}.md",
-            mime="text/markdown",
+            label="下载 Word",
+            data=docx_bytes,
+            file_name=f"视频分镜脚本_{angle_text[:20]}.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             key=f"download_video_{label}",
             use_container_width=True,
         )
     with copy_col:
-        with st.popover("📋 复制"):
+        with st.popover("复制 Markdown", use_container_width=True):
             st.code(md_text, language="markdown")
 
     is_structured = (
@@ -726,18 +829,19 @@ def _render_graphic_copies(label: str, copies: list):
     st.markdown(f"**📌 内容角度**：{angle_text}")
 
     md_text = _graphic_copies_to_markdown(label, copies)
+    docx_bytes = _graphic_copies_to_docx(label, copies)
     dl_col, copy_col = st.columns([1, 1])
     with dl_col:
         st.download_button(
-            label="📥 下载 (.md)",
-            data=md_text.encode("utf-8"),
-            file_name=f"图文选题发布文案_{angle_text[:20]}.md",
-            mime="text/markdown",
+            label="下载 Word",
+            data=docx_bytes,
+            file_name=f"图文选题发布文案_{angle_text[:20]}.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             key=f"download_graphic_{label}",
             use_container_width=True,
         )
     with copy_col:
-        with st.popover("📋 复制"):
+        with st.popover("复制 Markdown", use_container_width=True):
             st.code(md_text, language="markdown")
 
     copy_df = pd.DataFrame(copies)
@@ -752,18 +856,19 @@ def _render_legacy_video_scripts(scripts: list):
     """兼容旧版平铺视频脚本"""
     st.caption("（旧版格式，仅做兼容展示）")
     md_text = _video_scripts_to_markdown("旧版视频脚本", scripts)
+    docx_bytes = _video_scripts_to_docx("旧版视频脚本", scripts)
     dl_col, copy_col = st.columns([1, 1])
     with dl_col:
         st.download_button(
-            label="📥 下载 (.md)",
-            data=md_text.encode("utf-8"),
-            file_name="视频分镜脚本_旧版.md",
-            mime="text/markdown",
+            label="下载 Word",
+            data=docx_bytes,
+            file_name="视频分镜脚本_旧版.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             key="download_video_legacy",
             use_container_width=True,
         )
     with copy_col:
-        with st.popover("📋 复制"):
+        with st.popover("复制 Markdown", use_container_width=True):
             st.code(md_text, language="markdown")
     st.dataframe(pd.DataFrame(scripts), use_container_width=True, hide_index=True)
 
@@ -772,18 +877,19 @@ def _render_legacy_platform_copies(copies: list):
     """兼容旧版平铺平台文案"""
     st.caption("（旧版格式，仅做兼容展示）")
     md_text = _graphic_copies_to_markdown("旧版图文文案", copies)
+    docx_bytes = _graphic_copies_to_docx("旧版图文文案", copies)
     dl_col, copy_col = st.columns([1, 1])
     with dl_col:
         st.download_button(
-            label="📥 下载 (.md)",
-            data=md_text.encode("utf-8"),
-            file_name="图文选题发布文案_旧版.md",
-            mime="text/markdown",
+            label="下载 Word",
+            data=docx_bytes,
+            file_name="图文选题发布文案_旧版.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             key="download_graphic_legacy",
             use_container_width=True,
         )
     with copy_col:
-        with st.popover("📋 复制"):
+        with st.popover("复制 Markdown", use_container_width=True):
             st.code(md_text, language="markdown")
     st.dataframe(pd.DataFrame(copies), use_container_width=True, hide_index=True)
 
