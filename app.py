@@ -590,11 +590,89 @@ def render_content_playbook(
         st.info("💡 图片生成能力后续可接入 AI 绘图工具；当前先以文字版视觉方案呈现。")
 
 
+def _video_scripts_to_markdown(label: str, scripts: list) -> str:
+    """把结构化视频分镜脚本转成可下载/复制的 Markdown 文本。"""
+    angle_text = label.split("：", 1)[-1] if "：" in label else label
+    lines = [f"# 🎬 视频分镜脚本：{angle_text}", ""]
+
+    # 兼容旧版：旧版是平铺 list of dict，没有 acts
+    if (
+        isinstance(scripts, list)
+        and len(scripts) > 0
+        and isinstance(scripts[0], dict)
+        and "acts" in scripts[0]
+    ):
+        for d in scripts:
+            lines.append(f"## {d['时长']}｜{d['结构说明']}")
+            lines.append(f"**适合场景**：{d['适合场景']}")
+            lines.append("")
+            lines.append("| 环节 | 镜号 | 时长 | 画面描述 | 台词/字幕 | 音效/音乐 |")
+            lines.append("|---|---|---|---|---|---|")
+            for act in d["acts"]:
+                for shot in act["shots"]:
+                    row = [
+                        act["环节"],
+                        shot["镜号"],
+                        shot["时长"],
+                        shot["画面描述"],
+                        shot["台词/字幕"],
+                        shot["音效/音乐"],
+                    ]
+                    lines.append("| " + " | ".join(str(c).replace("|", "\\|") for c in row) + " |")
+            lines.append("")
+    else:
+        # 兼容旧版平铺 list
+        lines.append("| 平台 | 文案 | 话题标签 | 配图建议 |")
+        lines.append("|---|---|---|---|")
+        for s in scripts:
+            if isinstance(s, dict):
+                row = [str(s.get(k, "")) for k in ["平台", "文案", "话题标签", "配图建议"]]
+                lines.append("| " + " | ".join(c.replace("|", "\\|") for c in row) + " |")
+        lines.append("")
+
+    return "\n".join(lines)
+
+
+def _graphic_copies_to_markdown(label: str, copies: list) -> str:
+    """把多平台图文文案转成可下载/复制的 Markdown 文本。"""
+    angle_text = label.split("：", 1)[-1] if "：" in label else label
+    lines = [f"# 📝 图文选题发布文案：{angle_text}", ""]
+
+    for c in copies:
+        if not isinstance(c, dict):
+            continue
+        platform = c.get("平台", "平台")
+        form = c.get("形式", "")
+        lines.append(f"## {platform}" + (f"（{form}）" if form else ""))
+        for key, value in c.items():
+            if key in ("平台",):
+                continue
+            lines.append(f"**{key}**：{value}")
+        lines.append("")
+
+    return "\n".join(lines)
+
+
 def _render_video_angle(label: str, scripts: list):
     """渲染单个视频角度的 15s/20s/30s 分镜"""
     # 去掉前缀 "角度N："，只保留角度文本
     angle_text = label.split("：", 1)[-1] if "：" in label else label
     st.markdown(f"**📌 内容角度**：{angle_text}")
+
+    md_text = _video_scripts_to_markdown(label, scripts)
+    dl_col, copy_col = st.columns([1, 1])
+    with dl_col:
+        st.download_button(
+            label="📥 下载 (.md)",
+            data=md_text.encode("utf-8"),
+            file_name=f"视频分镜脚本_{angle_text[:20]}.md",
+            mime="text/markdown",
+            key=f"download_video_{label}",
+            use_container_width=True,
+        )
+    with copy_col:
+        with st.popover("📋 复制"):
+            st.code(md_text, language="markdown")
 
     is_structured = (
         isinstance(scripts, list)
@@ -646,6 +724,22 @@ def _render_graphic_copies(label: str, copies: list):
     """渲染单个图文角度的多平台文案"""
     angle_text = label.split("：", 1)[-1] if "：" in label else label
     st.markdown(f"**📌 内容角度**：{angle_text}")
+
+    md_text = _graphic_copies_to_markdown(label, copies)
+    dl_col, copy_col = st.columns([1, 1])
+    with dl_col:
+        st.download_button(
+            label="📥 下载 (.md)",
+            data=md_text.encode("utf-8"),
+            file_name=f"图文选题发布文案_{angle_text[:20]}.md",
+            mime="text/markdown",
+            key=f"download_graphic_{label}",
+            use_container_width=True,
+        )
+    with copy_col:
+        with st.popover("📋 复制"):
+            st.code(md_text, language="markdown")
+
     copy_df = pd.DataFrame(copies)
     st.dataframe(
         copy_df,
@@ -657,12 +751,40 @@ def _render_graphic_copies(label: str, copies: list):
 def _render_legacy_video_scripts(scripts: list):
     """兼容旧版平铺视频脚本"""
     st.caption("（旧版格式，仅做兼容展示）")
+    md_text = _video_scripts_to_markdown("旧版视频脚本", scripts)
+    dl_col, copy_col = st.columns([1, 1])
+    with dl_col:
+        st.download_button(
+            label="📥 下载 (.md)",
+            data=md_text.encode("utf-8"),
+            file_name="视频分镜脚本_旧版.md",
+            mime="text/markdown",
+            key="download_video_legacy",
+            use_container_width=True,
+        )
+    with copy_col:
+        with st.popover("📋 复制"):
+            st.code(md_text, language="markdown")
     st.dataframe(pd.DataFrame(scripts), use_container_width=True, hide_index=True)
 
 
 def _render_legacy_platform_copies(copies: list):
     """兼容旧版平铺平台文案"""
     st.caption("（旧版格式，仅做兼容展示）")
+    md_text = _graphic_copies_to_markdown("旧版图文文案", copies)
+    dl_col, copy_col = st.columns([1, 1])
+    with dl_col:
+        st.download_button(
+            label="📥 下载 (.md)",
+            data=md_text.encode("utf-8"),
+            file_name="图文选题发布文案_旧版.md",
+            mime="text/markdown",
+            key="download_graphic_legacy",
+            use_container_width=True,
+        )
+    with copy_col:
+        with st.popover("📋 复制"):
+            st.code(md_text, language="markdown")
     st.dataframe(pd.DataFrame(copies), use_container_width=True, hide_index=True)
 
 
