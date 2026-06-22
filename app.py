@@ -559,7 +559,7 @@ def render_content_playbook(
             st.warning("暂无视频脚本数据，请重新生成或刷新页面。")
 
     # ---------- 平台发布文案 ----------
-    with st.expander("📝 查看多平台发布文案"):
+    with st.expander("📝 查看图文选题发布文案"):
         platform_copies = playbook["平台文案"]
 
         if isinstance(platform_copies, list):
