@@ -759,11 +759,13 @@ def _render_video_angle(label: str, scripts: list):
     """渲染单个视频角度的 15s/20s/30s 分镜"""
     # 去掉前缀 "角度N："，只保留角度文本
     angle_text = label.split("：", 1)[-1] if "：" in label else label
-    st.markdown(f"**📌 内容角度**：{angle_text}")
+
+    title_col, dl_col, copy_col = st.columns([4, 1, 1])
+    with title_col:
+        st.markdown(f"**📌 内容角度**：{angle_text}")
 
     md_text = _video_scripts_to_markdown(label, scripts)
     docx_bytes = _video_scripts_to_docx(label, scripts)
-    dl_col, copy_col = st.columns([1, 1])
     with dl_col:
         st.download_button(
             label="下载 Word",
@@ -826,11 +828,13 @@ def _render_video_angle(label: str, scripts: list):
 def _render_graphic_copies(label: str, copies: list):
     """渲染单个图文角度的多平台文案"""
     angle_text = label.split("：", 1)[-1] if "：" in label else label
-    st.markdown(f"**📌 内容角度**：{angle_text}")
+
+    title_col, dl_col, copy_col = st.columns([4, 1, 1])
+    with title_col:
+        st.markdown(f"**📌 内容角度**：{angle_text}")
 
     md_text = _graphic_copies_to_markdown(label, copies)
     docx_bytes = _graphic_copies_to_docx(label, copies)
-    dl_col, copy_col = st.columns([1, 1])
     with dl_col:
         st.download_button(
             label="下载 Word",
@@ -854,10 +858,11 @@ def _render_graphic_copies(label: str, copies: list):
 
 def _render_legacy_video_scripts(scripts: list):
     """兼容旧版平铺视频脚本"""
-    st.caption("（旧版格式，仅做兼容展示）")
     md_text = _video_scripts_to_markdown("旧版视频脚本", scripts)
     docx_bytes = _video_scripts_to_docx("旧版视频脚本", scripts)
-    dl_col, copy_col = st.columns([1, 1])
+    cap_col, dl_col, copy_col = st.columns([4, 1, 1])
+    with cap_col:
+        st.caption("（旧版格式，仅做兼容展示）")
     with dl_col:
         st.download_button(
             label="下载 Word",
@@ -875,10 +880,11 @@ def _render_legacy_video_scripts(scripts: list):
 
 def _render_legacy_platform_copies(copies: list):
     """兼容旧版平铺平台文案"""
-    st.caption("（旧版格式，仅做兼容展示）")
     md_text = _graphic_copies_to_markdown("旧版图文文案", copies)
     docx_bytes = _graphic_copies_to_docx("旧版图文文案", copies)
-    dl_col, copy_col = st.columns([1, 1])
+    cap_col, dl_col, copy_col = st.columns([4, 1, 1])
+    with cap_col:
+        st.caption("（旧版格式，仅做兼容展示）")
     with dl_col:
         st.download_button(
             label="下载 Word",
