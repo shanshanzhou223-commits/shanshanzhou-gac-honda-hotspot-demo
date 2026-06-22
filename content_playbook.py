@@ -1,10 +1,235 @@
 """
 热点内容演绎 playbook：根据热点 B库标签生成可直接落地的内容方案
 """
+import hashlib
+import re
+import unicodedata
+from itertools import combinations
 from typing import Dict, List
+
+import jieba
 
 from angles import generate_content_angles
 from data import VEHICLES, NARRATIVE_VEHICLE_MAP, AUDIENCE_VEHICLE_MAP
+
+
+# ---------- 内容去重 / 重复度控制 ----------
+# 常见停用词 + 无意义虚词，计算重复度时剔除
+_STOP_WORDS = {
+    "的", "了", "在", "是", "我", "有", "和", "就", "不", "人", "都", "一", "一个", "上", "也",
+    "很", "到", "说", "要", "去", "你", "会", "着", "没有", "看", "好", "自己", "这", "那", "之",
+    "与", "以", "及", "等", "中", "为", "从", "将", "向", "把", "被", "让", "给", "使", "对", "关于",
+    "由", "于", "而", "但", "因为", "所以", "如果", "虽然", "然而", "因此", "或者", "还是", "以及",
+    "随着", "通过", "进行", "作为", "可以", "已经", "正在", "开始", "出现", "成为", "表示", "认为",
+    "需要", "能够", "可能", "应该", "方面", "问题", "时候", "情况", "部分", "一些", "一种", "一下",
+    "一次", "一样", "一直", "一切", "一般", "所有", "每个", "各位", "大家", "人们", "我们", "你们",
+    "他们", "它们", "它", "他", "她", "个", "来", "过", "下", "大", "小", "多", "少", "里", "外",
+    "前", "后", "左", "右", "内", "间", "边", "头", "面", "部", "身", "心", "手", "眼", "口", "声",
+    "地", "得", "着", "过", "呢", "吧", "啊", "哦", "嗯", "哈", "吗", "嘛", "呗", "哟", "哇", "唉",
+}
+
+# 同义/近义替换词库，用于降低画面描述的结构重复
+_VARIATION_POOLS = {
+    "全景": ["全景", "大全景", "远景", "航拍", "广角", "俯瞰"],
+    "中景": ["中景", "近景", "半身景", "过肩镜头", "胸像"],
+    "特写": ["特写", "近景特写", "细节特写", "微距", "大特写"],
+    "跟拍": ["跟拍", "尾随拍摄", "动态追踪", "侧面跟拍", "运动跟随"],
+    "快切": ["快切", "快剪", "快速切换", "快速组接", "跳切"],
+    "叠化": ["叠化", "渐变过渡", "溶接", "画面叠化"],
+    "驶过": ["驶过", "穿行", "掠过", "划过", "疾驰而过", "穿越"],
+    "停在": ["停在", "静置于", "停靠在", "泊于", "伫立"],
+    "画面": ["画面", "镜头", "影像", "场景", "构图"],
+    "车身": ["车身", "车体", "整车轮廓", "车侧", "车体线条"],
+    "车灯": ["车灯", "大灯", "贯穿灯", "尾灯", "灯组"],
+    "内饰": ["内饰", "座舱", "车内", "驾驶舱", "车厢"],
+    "启动": ["启动", "点火", "唤醒", "通电", "车辆启动"],
+    "展现": ["展现", "呈现", "露出", "凸显", "体现"],
+    "出现": ["出现", "浮现", "显现", "映入眼帘", "进入画面"],
+    "背景": ["背景", "后景", "环境", "远景层", "空间氛围"],
+    "快速": ["快速", "迅速", "飞快", "急速", "紧凑"],
+    "缓缓": ["缓缓", "慢慢", "渐进", "徐徐"],
+    "镜头": ["镜头", "机位", "视角", "视点", "取景"],
+    "车主": ["车主", "驾驶者", "司机", "用户"],
+    "人物": ["人物", "人物侧影", "人物背影", "人物近景"],
+    "街道": ["街道", "城市道路", "街区", "路面"],
+    "清晰": ["清晰", "分明", "锐利", "清楚"],
+    "大字": ["大字", "大标题", "醒目文字", "主题字"],
+    "热搜": ["热搜", "热榜", "热门话题", "榜单"],
+    "表情": ["表情", "神情", "神态", "面部"],
+    # 运动/热血主题常用词
+    "运动": ["运动", "动感", "竞速", "驾驭", "操控"],
+    "热血": ["热血", "激昂", "燃", "澎湃", "振奋"],
+    "赛道": ["赛道", "跑道", "竞速场", "弯道", "山路"],
+    "冠军": ["冠军", "胜者", "金牌", "冠军时刻", "赢家"],
+    "速度": ["速度", "速率", "疾速", "飞驰", "迅猛"],
+    "驾驶": ["驾驶", "驾驭", "操控", "开", "驱车"],
+    "车辆": ["车辆", "座驾", "车", "它", "这台"],
+    "擦汗": ["擦汗", "调整呼吸", "握拳", "目光如炬"],
+    "坚定": ["坚定", "专注", "执着", "自信"],
+    # 台词/字幕常用词
+    "装下": ["装下", "承载", "容纳", "收下", "托起"],
+    "接住": ["接住", "回应", "承接", "接住", "迎住"],
+    "热血到底": ["热血到底", "燃到底", "一路热血", "热血不息"],
+    "赛道基因": ["赛道基因", "运动血统", "竞速基因", "性能基因"],
+    "一直都在": ["一直都在", "从未离开", "始终在线", "从未改变"],
+    "不需要解释": ["不需要解释", "无需多言", "自有答案", "不言而喻"],
+    "触手可及": ["触手可及", "近在眼前", "一步之遥", "垂手可得"],
+}
+
+
+def _tokenize(text: str) -> List[str]:
+    """中文分词，返回有效词元列表。"""
+    tokens = []
+    for tok in jieba.cut(text):
+        tok = tok.strip()
+        if not tok:
+            continue
+        # 去掉纯标点、纯数字、纯空格的 token
+        if all(
+            unicodedata.category(ch).startswith("P")
+            or ch.isdigit()
+            or ch.isspace()
+            for ch in tok
+        ):
+            continue
+        if len(tok) == 1 and tok in _STOP_WORDS:
+            continue
+        tokens.append(tok)
+    return tokens
+
+
+def _content_tokens(text: str) -> List[str]:
+    """提取用于重复度计算的内容词（去掉停用词）。"""
+    tokens = _tokenize(text)
+    return [t for t in tokens if t not in _STOP_WORDS]
+
+
+def _strip_terms(text: str, terms: List[str]) -> str:
+    """从文本中移除指定术语（用于重复度计算时排除品牌名/话题词）。"""
+    if not text:
+        return text
+    result = text
+    for term in sorted(set(terms or []), key=len, reverse=True):
+        if term:
+            result = result.replace(term, "")
+    return result
+
+
+def _containment_similarity(a: str, b: str, excluded_terms: List[str] = None) -> float:
+    """
+    基于内容词的包含相似度：
+    similarity = |A∩B| / min(|A|,|B|)
+    当 A 几乎被 B 包含时，相似度接近 1。
+    excluded_terms 中的词会在分词前被剔除，避免品牌名/话题词拉高相似度。
+    """
+    if excluded_terms:
+        a = _strip_terms(a, excluded_terms)
+        b = _strip_terms(b, excluded_terms)
+    tokens_a = set(_content_tokens(a))
+    tokens_b = set(_content_tokens(b))
+    if not tokens_a or not tokens_b:
+        return 0.0
+    intersection = tokens_a & tokens_b
+    return len(intersection) / min(len(tokens_a), len(tokens_b))
+
+
+def _repetition_rate(
+    texts: List[str],
+    threshold: float = 0.5,
+    exclude_texts: List[str] = None,
+    excluded_terms: List[str] = None,
+) -> float:
+    """
+    计算文本列表的重复度：
+    重复度 = 高相似文本对数 / 总文本对数
+    其中高相似定义为 containment_similarity >= threshold。
+    exclude_texts 中的整句会被剔除；excluded_terms 中的词会在计算相似度时忽略。
+    """
+    exclude_set = set(exclude_texts or [])
+    texts = [t for t in texts if t and str(t).strip() and str(t).strip() not in exclude_set]
+    n = len(texts)
+    if n < 2:
+        return 0.0
+    pairs = list(combinations(range(n), 2))
+    high_sim_count = 0
+    for i, j in pairs:
+        if _containment_similarity(texts[i], texts[j], excluded_terms=excluded_terms) >= threshold:
+            high_sim_count += 1
+    return high_sim_count / len(pairs)
+
+
+def _rewrite_once(text: str, seed: int = 0) -> str:
+    """对单条文本做一次同义替换，seed 用于控制替换选择。"""
+    new_text = text
+    # 按固定顺序遍历替换词库，哈希选择候选，保证稳定
+    keys = sorted(_VARIATION_POOLS.keys())
+    for key in keys:
+        if key not in new_text:
+            continue
+        pool = _VARIATION_POOLS[key]
+        idx = (int(hashlib.md5(f"{new_text}|{key}|{seed}".encode()).hexdigest(), 16)) % len(pool)
+        candidate = pool[idx]
+        if candidate != key:
+            new_text = new_text.replace(key, candidate, 1)
+            return new_text
+    return new_text
+
+
+def _diversify_texts(
+    texts: List[str],
+    max_rate: float = 0.1,
+    max_iter: int = 20,
+    exclude_texts: List[str] = None,
+    threshold: float = 0.5,
+    excluded_terms: List[str] = None,
+) -> List[str]:
+    """
+    对文本列表做迭代改写，直到重复度低于 max_rate。
+    保持列表长度和顺序不变。
+    exclude_texts 中的文本会被从重复度计算中剔除（如意外的 slogan/角度原文重复）。
+    excluded_terms 中的词会在计算相似度时忽略（如品牌名、话题词）。
+    threshold 定义“高相似”的 containment_similarity 阈值。
+    """
+    texts = list(texts)
+    exclude_set = set(exclude_texts or [])
+
+    def _filtered(items):
+        return [t for t in items if t and str(t).strip() and str(t).strip() not in exclude_set]
+
+    for _ in range(max_iter):
+        filtered = _filtered(texts)
+        rate = _repetition_rate(filtered, threshold=threshold, excluded_terms=excluded_terms)
+        if rate <= max_rate:
+            break
+
+        # 只在非排除文本中找最相似的一对
+        worst_pair = None
+        worst_sim = -1.0
+        valid_indices = [i for i, t in enumerate(texts) if str(t).strip() not in exclude_set]
+        for i, j in combinations(valid_indices, 2):
+            sim = _containment_similarity(texts[i], texts[j], excluded_terms=excluded_terms)
+            if sim > worst_sim:
+                worst_sim = sim
+                worst_pair = (i, j)
+
+        if worst_pair is None or worst_sim < threshold:
+            break
+
+        idx_to_rewrite = worst_pair[1]
+        original = texts[idx_to_rewrite]
+        rewritten = original
+        changed = False
+        for seed in range(20):
+            rewritten = _rewrite_once(original, seed=seed)
+            if rewritten != original:
+                changed = True
+                break
+        if not changed:
+            # 已无法通过同义替换降低重复，终止
+            break
+        texts[idx_to_rewrite] = rewritten
+
+    return texts
 
 
 def _best_vehicle_for_topic(topic: Dict) -> str:
@@ -369,7 +594,7 @@ def _theme_pack(
         veh20a_sub = f"{vehicle}的{scene0}，能装下这份热血。"
         veh20b_sub = f"冠军只是结果，{vehicle}的赛道基因一直都在。"
         veh30a_sub = angle
-        veh30b_sub = f"{vehicle}用{image0}，接住这份热血{emotion}。"
+        veh30b_sub = f"{vehicle}用{image0}，接住这份赛场上的{emotion}。"
         pro20_sub = f"{vehicle} × {keyword}｜{image0}，热血全开"
         pro30a_sub = f"{vehicle}｜{image0}，为速度而生"
     elif "family" in t:
@@ -674,6 +899,31 @@ def generate_video_script(topic: Dict, vehicle_key: str = None, angle: str = Non
             ],
         },
     ]
+
+    # ---------- 重复度控制：画面描述 & 台词/字幕 重复度 < 10% ----------
+    # 收集所有 shots 的引用和文本
+    all_shots = []
+    for d in durations:
+        for act in d["acts"]:
+            for shot in act["shots"]:
+                all_shots.append(shot)
+
+    # 去重画面描述
+    visuals = [shot["画面描述"] for shot in all_shots]
+    diversified_visuals = _diversify_texts(visuals, max_rate=0.1, max_iter=30)
+    for shot, new_visual in zip(all_shots, diversified_visuals):
+        shot["画面描述"] = new_visual
+
+    # 去重台词/字幕；角度原文作为 intentional slogan，允许重复出现，不纳入去重
+    # 同时忽略车型名与话题关键词，避免品牌一致性被误判为重复
+    excluded_terms = [vehicle, keyword, vehicle_key] if vehicle_key else [vehicle, keyword]
+    subs = [shot["台词/字幕"] for shot in all_shots]
+    diversified_subs = _diversify_texts(
+        subs, max_rate=0.1, max_iter=30, exclude_texts=[angle], excluded_terms=excluded_terms
+    )
+    for shot, new_sub in zip(all_shots, diversified_subs):
+        if str(shot["台词/字幕"]).strip() != angle:
+            shot["台词/字幕"] = new_sub
 
     return durations
 
@@ -1080,6 +1330,22 @@ def generate_graphic_copies(topic: Dict, vehicle_key: str = None, angle: str = N
             "配图建议": f"封面：{vehicle}轿跑外观与{keyword}元素拼贴；内页：{scene0}氛围图+外观/智能/驾控细节特写+金句卡",
         },
     ]
+
+    # ---------- 重复度控制：各平台文案重复度 < 10% ----------
+    # 角度原文作为标题/Slogan 允许重复出现，不纳入去重
+    copy_texts = [c["文案"] for c in copies]
+    excluded_terms = [vehicle, keyword, vehicle_key]
+    diversified_copy_texts = _diversify_texts(
+        copy_texts,
+        max_rate=0.1,
+        max_iter=30,
+        exclude_texts=[angle],
+        threshold=0.7,
+        excluded_terms=excluded_terms,
+    )
+    for c, new_text in zip(copies, diversified_copy_texts):
+        c["文案"] = new_text
+
     return copies
 
 
@@ -1118,6 +1384,21 @@ def generate_platform_copies(topic: Dict, vehicle_key: str = None) -> List[Dict]
             "配图建议": f"封面：{vehicle}与{keyword}元素拼贴；内页：{scene0}氛围图+细节特写",
         },
     ]
+
+    # ---------- 重复度控制：各平台文案重复度 < 10% ----------
+    copy_texts = [c["文案"] for c in copies]
+    excluded_terms = [vehicle, keyword, vehicle_key]
+    diversified_copy_texts = _diversify_texts(
+        copy_texts,
+        max_rate=0.1,
+        max_iter=30,
+        exclude_texts=[angle],
+        threshold=0.7,
+        excluded_terms=excluded_terms,
+    )
+    for c, new_text in zip(copies, diversified_copy_texts):
+        c["文案"] = new_text
+
     return copies
 
 
