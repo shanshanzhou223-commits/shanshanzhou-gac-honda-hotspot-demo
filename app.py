@@ -893,167 +893,174 @@ with tab3:
                 auto_external=auto_external,
             )
 
-            # 1. 全车型得分表
-            st.subheader("📊 全部车型匹配得分")
-            rank_df = pd.DataFrame(
-                [
-                    {
-                        "排名": i + 1,
-                        "车型": r["vehicle"],
-                        "完整契合分": r["full_score"],
-                        "品牌契合分": r["brand_fit"],
-                        "推荐等级": r["tier"],
-                        "主要匹配类型": " + ".join(r["match_types"]),
-                    }
-                    for i, r in enumerate(rankings)
-                ]
-            )
-            st.dataframe(rank_df, use_container_width=True)
-
-            # 2. 雷达图：TOP4 车型五维对比
-            st.subheader("🕸️ 品牌契合分雷达对比（TOP4）")
-            top4 = rankings[:4]
-            radar_data = {r["vehicle"]: r["sub_scores"] for r in top4}
-            fig = draw_radar(radar_data, title=f"『{topic_text}』与 TOP4 车型契合度对比")
-            st.plotly_chart(fig, use_container_width=True)
-
-            # 3. TOP1 详情
-            top1 = rankings[0]
-            st.divider()
-            st.subheader(f"🏆 最匹配车型：{top1['vehicle']}（{top1['tier']}，{top1['full_score']}分）")
-
-            c1, c2, c3 = st.columns(3)
-            c1.metric("完整契合分", top1["full_score"])
-            c2.metric("品牌契合分", top1["brand_fit"])
-            c3.metric("主要匹配类型", " + ".join(top1["match_types"]))
-
-            # 计算过程展示
-            with st.expander("📐 查看评分计算过程"):
-                s = top1["sub_scores"]
-                brand_fit_source = "手动覆盖" if use_brand_fit_override else "自动计算"
-                external_source = "AI自动" if auto_external else "手动设定"
-                st.markdown(
-                    f"""
-                    **第一步：计算品牌契合分（5个维度加权）**
-
-                    | 维度 | 得分 | 权重 | 加权得分 |
-                    |---|---|---|---|
-                    | 直接功能匹配 | {s['直接功能匹配']} | 30% | {round(s['直接功能匹配'] * 0.30, 2)} |
-                    | 价值观/叙事匹配 | {s['价值观/叙事匹配']} | 25% | {round(s['价值观/叙事匹配'] * 0.25, 2)} |
-                    | 人群兴趣匹配 | {s['人群兴趣匹配']} | 25% | {round(s['人群兴趣匹配'] * 0.25, 2)} |
-                    | 竞品/品类关联 | {s['竞品/品类关联']} | 15% | {round(s['竞品/品类关联'] * 0.15, 2)} |
-                    | 文化时刻适配 | {s['文化时刻适配']} | 5% | {round(s['文化时刻适配'] * 0.05, 2)} |
-
-                    **品牌契合分 = {top1['brand_fit']}**（{brand_fit_source}）
-                    """
+            data_tab, content_tab = st.tabs(["📊 数据分析", "💡 内容方案"])
+            
+            with data_tab:
+                # 1. 全车型得分表
+                st.subheader("📊 全部车型匹配得分")
+                rank_df = pd.DataFrame(
+                    [
+                        {
+                            "排名": i + 1,
+                            "车型": r["vehicle"],
+                            "完整契合分": r["full_score"],
+                            "品牌契合分": r["brand_fit"],
+                            "推荐等级": r["tier"],
+                            "主要匹配类型": " + ".join(r["match_types"]),
+                        }
+                        for i, r in enumerate(rankings)
+                    ]
                 )
+                st.dataframe(rank_df, use_container_width=True)
 
-                if auto_external:
+                # 2. 雷达图：TOP4 车型五维对比
+                st.subheader("🕸️ 品牌契合分雷达对比（TOP4）")
+                top4 = rankings[:4]
+                radar_data = {r["vehicle"]: r["sub_scores"] for r in top4}
+                fig = draw_radar(radar_data, title=f"『{topic_text}』与 TOP4 车型契合度对比")
+                st.plotly_chart(fig, use_container_width=True)
+
+                # 3. TOP1 详情
+                top1 = rankings[0]
+                st.divider()
+                st.subheader(f"🏆 最匹配车型：{top1['vehicle']}（{top1['tier']}，{top1['full_score']}分）")
+
+                c1, c2, c3 = st.columns(3)
+                c1.metric("完整契合分", top1["full_score"])
+                c2.metric("品牌契合分", top1["brand_fit"])
+                c3.metric("主要匹配类型", " + ".join(top1["match_types"]))
+
+                # 计算过程展示
+                with st.expander("📐 查看评分计算过程"):
+                    s = top1["sub_scores"]
+                    brand_fit_source = "手动覆盖" if use_brand_fit_override else "自动计算"
+                    external_source = "AI自动" if auto_external else "手动设定"
                     st.markdown(
                         f"""
-                        > 🤖 **外部维度为 AI 自动计算（{external_source}）**
-                        > - **情绪共鸣分 {top1['emotion']}**：基于「{labels.get('价值观/情绪', '-')}」情绪标签 + 「{labels.get('热度生命周期', '-')}」生命周期，并参考车型特征自动推导。
-                        > - **传播可行性分 {top1['feasibility']}**：基于「{labels.get('领域/主题域', '-')}」领域 + 「{labels.get('叙事原型', '-')}」叙事原型 + 「{labels.get('品牌安全等级', '-')}」安全等级自动推导。
-                        > - **安全分 {top1['safety']}**：基于「{labels.get('品牌安全等级', '-')}」安全等级，叠加领域、情绪、叙事原型风险加权自动推导。
+                        **第一步：计算品牌契合分（5个维度加权）**
+
+                        | 维度 | 得分 | 权重 | 加权得分 |
+                        |---|---|---|---|
+                        | 直接功能匹配 | {s['直接功能匹配']} | 30% | {round(s['直接功能匹配'] * 0.30, 2)} |
+                        | 价值观/叙事匹配 | {s['价值观/叙事匹配']} | 25% | {round(s['价值观/叙事匹配'] * 0.25, 2)} |
+                        | 人群兴趣匹配 | {s['人群兴趣匹配']} | 25% | {round(s['人群兴趣匹配'] * 0.25, 2)} |
+                        | 竞品/品类关联 | {s['竞品/品类关联']} | 15% | {round(s['竞品/品类关联'] * 0.15, 2)} |
+                        | 文化时刻适配 | {s['文化时刻适配']} | 5% | {round(s['文化时刻适配'] * 0.05, 2)} |
+
+                        **品牌契合分 = {top1['brand_fit']}**（{brand_fit_source}）
                         """
                     )
 
-                st.markdown(
-                    f"""
-                    **第二步：计算完整契合分（热度 + 品牌契合 + 情绪 + 可行性 + 安全）**
-
-                    | 因子 | 得分 | 来源 | 权重 | 加权得分 |
-                    |---|---|---|---|---|
-                    | 热度 | {top1['heat']} | 手动设定 | 25% | {round(top1['heat'] * 0.25, 2)} |
-                    | 品牌契合 | {top1['brand_fit']} | {brand_fit_source} | 35% | {round(top1['brand_fit'] * 0.35, 2)} |
-                    | 情绪共鸣 | {top1['emotion']} | {external_source} | 20% | {round(top1['emotion'] * 0.20, 2)} |
-                    | 传播可行性 | {top1['feasibility']} | {external_source} | 10% | {round(top1['feasibility'] * 0.10, 2)} |
-                    | 安全分 | {top1['safety']} | {external_source} | 10% | {round(top1['safety'] * 0.10, 2)} |
-
-                    **完整契合分 = {top1['full_score']} → {top1['tier']}**
-                    """
-                )
-                st.markdown(
-                    """
-                    **推荐等级标准**：S级（≥85）、A级（70-84）、B级（55-69）、C级（<55）
-                    """
-                )
-
-            # TOP1 子分明细
-            sub_df = pd.DataFrame(
-                [{"维度": k, "得分": v} for k, v in top1["sub_scores"].items()]
-            )
-            st.bar_chart(sub_df.set_index("维度"))
-
-            # 4. 内容角度 + 深度演绎（仅非风险热点才生成）
-            if labels.get("品牌安全等级") != "风险":
-                st.markdown("**💡 建议内容角度**")
-                classified_angles = generate_classified_angles(
-                    topic_text, top1["vehicle"], labels, top1["match_types"], video_n=7, graphic_n=4
-                )
-
-                video_angles = classified_angles["video"]
-                graphic_angles = classified_angles["graphic"]
-
-                st.markdown("*短视频选题（7个）*")
-                video_df = pd.DataFrame(
-                    [
-                        {
-                            "序号": i + 1,
-                            "内容角度": a["angle"],
-                            "形式": a["type"],
-                            "推荐平台": a["platform"],
-                        }
-                        for i, a in enumerate(video_angles)
-                    ]
-                )
-                st.dataframe(video_df, use_container_width=True, hide_index=True)
-
-                st.markdown("*图文选题（4个）*")
-                graphic_df = pd.DataFrame(
-                    [
-                        {
-                            "序号": i + 1,
-                            "内容角度": a["angle"],
-                            "形式": a["type"],
-                            "推荐平台": a["platform"],
-                        }
-                        for i, a in enumerate(graphic_angles)
-                    ]
-                )
-                st.dataframe(graphic_df, use_container_width=True, hide_index=True)
-
-                # 深度内容演绎：视频脚本 + 平台文案 + 视觉建议
-                topic_for_playbook = {"topic": topic_text, **labels}
-                render_content_playbook(
-                    topic_for_playbook,
-                    top1["vehicle"],
-                    title="🎬 深度内容演绎方案（视频脚本 / 平台文案 / 配图建议）",
-                    classified_angles=classified_angles,
-                )
-
-                # 再给出 TOP2 的角度（如果与 TOP1 同 tier 或分数接近）
-                if len(rankings) >= 2 and rankings[1]["full_score"] >= top1["full_score"] - 8:
-                    top2 = rankings[1]
-                    with st.expander(f"查看次优车型 {top2['vehicle']} 的内容角度"):
-                        angles2 = generate_content_angles(
-                            topic_text, top2["vehicle"], labels, top2["match_types"], top_n=5
+                    if auto_external:
+                        st.markdown(
+                            f"""
+                            > 🤖 **外部维度为 AI 自动计算（{external_source}）**
+                            > - **情绪共鸣分 {top1['emotion']}**：基于「{labels.get('价值观/情绪', '-')}」情绪标签 + 「{labels.get('热度生命周期', '-')}」生命周期，并参考车型特征自动推导。
+                            > - **传播可行性分 {top1['feasibility']}**：基于「{labels.get('领域/主题域', '-')}」领域 + 「{labels.get('叙事原型', '-')}」叙事原型 + 「{labels.get('品牌安全等级', '-')}」安全等级自动推导。
+                            > - **安全分 {top1['safety']}**：基于「{labels.get('品牌安全等级', '-')}」安全等级，叠加领域、情绪、叙事原型风险加权自动推导。
+                            """
                         )
-                        for a in angles2:
-                            st.markdown(
-                                f"- **{a['type']}（{a['platform']}）**：{a['angle']}"
-                            )
-            else:
-                st.info("由于热点安全等级为「风险」，系统已停止生成内容角度。建议放弃该热点。")
 
-            # 5. 各车型明细（可选展开）
-            st.divider()
-            with st.expander("查看全部车型明细"):
-                for r in rankings:
                     st.markdown(
-                        f"**{r['vehicle']}**：完整分 {r['full_score']}，品牌契合 {r['brand_fit']}，"
-                        f"等级 {r['tier']}，匹配类型：{' + '.join(r['match_types'])}"
+                        f"""
+                        **第二步：计算完整契合分（热度 + 品牌契合 + 情绪 + 可行性 + 安全）**
+
+                        | 因子 | 得分 | 来源 | 权重 | 加权得分 |
+                        |---|---|---|---|---|
+                        | 热度 | {top1['heat']} | 手动设定 | 25% | {round(top1['heat'] * 0.25, 2)} |
+                        | 品牌契合 | {top1['brand_fit']} | {brand_fit_source} | 35% | {round(top1['brand_fit'] * 0.35, 2)} |
+                        | 情绪共鸣 | {top1['emotion']} | {external_source} | 20% | {round(top1['emotion'] * 0.20, 2)} |
+                        | 传播可行性 | {top1['feasibility']} | {external_source} | 10% | {round(top1['feasibility'] * 0.10, 2)} |
+                        | 安全分 | {top1['safety']} | {external_source} | 10% | {round(top1['safety'] * 0.10, 2)} |
+
+                        **完整契合分 = {top1['full_score']} → {top1['tier']}**
+                        """
                     )
+                    st.markdown(
+                        """
+                        **推荐等级标准**：S级（≥85）、A级（70-84）、B级（55-69）、C级（<55）
+                        """
+                    )
+
+                # TOP1 子分明细
+                sub_df = pd.DataFrame(
+                    [{"维度": k, "得分": v} for k, v in top1["sub_scores"].items()]
+                )
+                st.bar_chart(sub_df.set_index("维度"))
+
+            
+            with content_tab:
+                # 4. 内容角度 + 深度演绎（仅非风险热点才生成）
+                if labels.get("品牌安全等级") != "风险":
+                    st.markdown("**💡 建议内容角度**")
+                    classified_angles = generate_classified_angles(
+                        topic_text, top1["vehicle"], labels, top1["match_types"], video_n=7, graphic_n=4
+                    )
+
+                    video_angles = classified_angles["video"]
+                    graphic_angles = classified_angles["graphic"]
+
+                    st.markdown("*短视频选题（7个）*")
+                    video_df = pd.DataFrame(
+                        [
+                            {
+                                "序号": i + 1,
+                                "内容角度": a["angle"],
+                                "形式": a["type"],
+                                "推荐平台": a["platform"],
+                            }
+                            for i, a in enumerate(video_angles)
+                        ]
+                    )
+                    st.dataframe(video_df, use_container_width=True, hide_index=True)
+
+                    st.markdown("*图文选题（4个）*")
+                    graphic_df = pd.DataFrame(
+                        [
+                            {
+                                "序号": i + 1,
+                                "内容角度": a["angle"],
+                                "形式": a["type"],
+                                "推荐平台": a["platform"],
+                            }
+                            for i, a in enumerate(graphic_angles)
+                        ]
+                    )
+                    st.dataframe(graphic_df, use_container_width=True, hide_index=True)
+
+                    # 深度内容演绎：视频脚本 + 平台文案 + 视觉建议
+                    topic_for_playbook = {"topic": topic_text, **labels}
+                    render_content_playbook(
+                        topic_for_playbook,
+                        top1["vehicle"],
+                        title="🎬 深度内容演绎方案（视频脚本 / 平台文案 / 配图建议）",
+                        classified_angles=classified_angles,
+                    )
+
+                    # 再给出 TOP2 的角度（如果与 TOP1 同 tier 或分数接近）
+                    if len(rankings) >= 2 and rankings[1]["full_score"] >= top1["full_score"] - 8:
+                        top2 = rankings[1]
+                        with st.expander(f"查看次优车型 {top2['vehicle']} 的内容角度"):
+                            angles2 = generate_content_angles(
+                                topic_text, top2["vehicle"], labels, top2["match_types"], top_n=5
+                            )
+                            for a in angles2:
+                                st.markdown(
+                                    f"- **{a['type']}（{a['platform']}）**：{a['angle']}"
+                                )
+                else:
+                    st.info("由于热点安全等级为「风险」，系统已停止生成内容角度。建议放弃该热点。")
+
+            
+            with data_tab:
+                # 5. 各车型明细（可选展开）
+                st.divider()
+                with st.expander("查看全部车型明细"):
+                    for r in rankings:
+                        st.markdown(
+                            f"**{r['vehicle']}**：完整分 {r['full_score']}，品牌契合 {r['brand_fit']}，"
+                            f"等级 {r['tier']}，匹配类型：{' + '.join(r['match_types'])}"
+                        )
 
     # ========== 子tab 2：车型 → 全部热点（新增反向匹配） ==========
     with direction_tabs[1]:
@@ -1106,91 +1113,98 @@ with tab3:
                 auto_external=auto_external,
             )
 
-            # TOP10 热点排行
-            st.subheader(f"📊 {v['name']} 最匹配的热点 Top10")
-            topic_rank_df = pd.DataFrame(
-                [
-                    {
-                        "排名": i + 1,
-                        "热点": r["topic"],
-                        "来源平台": r["platform"],
-                        "完整契合分": r["full_score"],
-                        "品牌契合分": r["brand_fit"],
-                        "热度": r["heat"],
-                        "推荐等级": r["tier"],
-                        "主要匹配类型": " + ".join(r["match_types"]),
-                    }
-                    for i, r in enumerate(topic_rankings[:10])
-                ]
-            )
-            st.dataframe(topic_rank_df, use_container_width=True, hide_index=True)
-
-            # TOP1 热点详情 + 内容演绎
-            top_topic = topic_rankings[0]
-            st.divider()
-            st.subheader(
-                f"🏆 最匹配热点：{top_topic['topic']}（{top_topic['tier']}，{top_topic['full_score']}分）"
-            )
-
-            t1, t2, t3 = st.columns(3)
-            t1.metric("完整契合分", top_topic["full_score"])
-            t2.metric("品牌契合分", top_topic["brand_fit"])
-            t3.metric("主要匹配类型", " + ".join(top_topic["match_types"]))
-
-            # 雷达图：该车型对 TOP5 热点的品牌契合五维对比
-            st.subheader("🕸️ 该车型与 TOP5 热点的品牌契合对比")
-            top5_topics = topic_rankings[:5]
-            radar_data = {r["topic"]: r["sub_scores"] for r in top5_topics}
-            fig = draw_radar(
-                radar_data,
-                title=f"『{selected_vehicle}』与 TOP5 热点的品牌契合五维对比",
-            )
-            st.plotly_chart(fig, use_container_width=True)
-
-            # 内容角度 + 深度演绎
-            if top_topic["safety"] >= 30:
-                st.markdown("**💡 建议内容角度**")
-                # 构造 labels
-                top_topic_labels = next(
-                    t for t in all_topics if t["topic"] == top_topic["topic"]
+            data_tab2, content_tab2 = st.tabs(["📊 数据分析", "💡 内容方案"])
+            
+            with data_tab2:
+                # TOP10 热点排行
+                st.subheader(f"📊 {v['name']} 最匹配的热点 Top10")
+                topic_rank_df = pd.DataFrame(
+                    [
+                        {
+                            "排名": i + 1,
+                            "热点": r["topic"],
+                            "来源平台": r["platform"],
+                            "完整契合分": r["full_score"],
+                            "品牌契合分": r["brand_fit"],
+                            "热度": r["heat"],
+                            "推荐等级": r["tier"],
+                            "主要匹配类型": " + ".join(r["match_types"]),
+                        }
+                        for i, r in enumerate(topic_rankings[:10])
+                    ]
                 )
-                classified_angles = generate_classified_angles(
-                    top_topic["topic"],
-                    selected_vehicle,
-                    top_topic_labels,
-                    top_topic["match_types"],
-                    video_n=7,
-                    graphic_n=4,
+                st.dataframe(topic_rank_df, use_container_width=True, hide_index=True)
+
+                # TOP1 热点详情 + 内容演绎
+                top_topic = topic_rankings[0]
+                st.divider()
+                st.subheader(
+                    f"🏆 最匹配热点：{top_topic['topic']}（{top_topic['tier']}，{top_topic['full_score']}分）"
                 )
 
-                video_angles = classified_angles["video"]
-                graphic_angles = classified_angles["graphic"]
+                t1, t2, t3 = st.columns(3)
+                t1.metric("完整契合分", top_topic["full_score"])
+                t2.metric("品牌契合分", top_topic["brand_fit"])
+                t3.metric("主要匹配类型", " + ".join(top_topic["match_types"]))
 
-                st.markdown("*短视频选题（7个）*")
-                for i, a in enumerate(video_angles):
-                    st.markdown(f"{i + 1}. **{a['type']}（{a['platform']}）**：{a['angle']}")
-
-                st.markdown("*图文选题（4个）*")
-                for i, a in enumerate(graphic_angles):
-                    st.markdown(f"{i + 1}. **{a['type']}（{a['platform']}）**：{a['angle']}")
-
-                # 深度内容演绎：视频脚本 + 平台文案 + 视觉建议
-                render_content_playbook(
-                    top_topic_labels,
-                    selected_vehicle,
-                    title="🎬 深度内容演绎方案（视频脚本 / 平台文案 / 配图建议）",
-                    classified_angles=classified_angles,
+                # 雷达图：该车型对 TOP5 热点的品牌契合五维对比
+                st.subheader("🕸️ 该车型与 TOP5 热点的品牌契合对比")
+                top5_topics = topic_rankings[:5]
+                radar_data = {r["topic"]: r["sub_scores"] for r in top5_topics}
+                fig = draw_radar(
+                    radar_data,
+                    title=f"『{selected_vehicle}』与 TOP5 热点的品牌契合五维对比",
                 )
+                st.plotly_chart(fig, use_container_width=True)
 
-            # 全部热点明细（展开）
-            st.divider()
-            with st.expander("查看全部热点匹配明细"):
-                for r in topic_rankings:
-                    st.markdown(
-                        f"**{r['topic']}**（{r['platform']}）："
-                        f"完整分 {r['full_score']}，品牌契合 {r['brand_fit']}，"
-                        f"等级 {r['tier']}，匹配类型：{' + '.join(r['match_types'])}"
+            
+            with content_tab2:
+                # 内容角度 + 深度演绎
+                if top_topic["safety"] >= 30:
+                    st.markdown("**💡 建议内容角度**")
+                    # 构造 labels
+                    top_topic_labels = next(
+                        t for t in all_topics if t["topic"] == top_topic["topic"]
                     )
+                    classified_angles = generate_classified_angles(
+                        top_topic["topic"],
+                        selected_vehicle,
+                        top_topic_labels,
+                        top_topic["match_types"],
+                        video_n=7,
+                        graphic_n=4,
+                    )
+
+                    video_angles = classified_angles["video"]
+                    graphic_angles = classified_angles["graphic"]
+
+                    st.markdown("*短视频选题（7个）*")
+                    for i, a in enumerate(video_angles):
+                        st.markdown(f"{i + 1}. **{a['type']}（{a['platform']}）**：{a['angle']}")
+
+                    st.markdown("*图文选题（4个）*")
+                    for i, a in enumerate(graphic_angles):
+                        st.markdown(f"{i + 1}. **{a['type']}（{a['platform']}）**：{a['angle']}")
+
+                    # 深度内容演绎：视频脚本 + 平台文案 + 视觉建议
+                    render_content_playbook(
+                        top_topic_labels,
+                        selected_vehicle,
+                        title="🎬 深度内容演绎方案（视频脚本 / 平台文案 / 配图建议）",
+                        classified_angles=classified_angles,
+                    )
+
+            
+            with data_tab2:
+                # 全部热点明细（展开）
+                st.divider()
+                with st.expander("查看全部热点匹配明细"):
+                    for r in topic_rankings:
+                        st.markdown(
+                            f"**{r['topic']}**（{r['platform']}）："
+                            f"完整分 {r['full_score']}，品牌契合 {r['brand_fit']}，"
+                            f"等级 {r['tier']}，匹配类型：{' + '.join(r['match_types'])}"
+                        )
 
 # ---------- Tab 4: 评分逻辑 ----------
 with tab4:
