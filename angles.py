@@ -3,6 +3,7 @@
 """
 from typing import Dict, List
 
+from angle_library import get_creative_templates
 from data import ANGLE_TEMPLATES, VEHICLES
 
 
@@ -38,6 +39,19 @@ def generate_content_angles(
 
     candidates = []
 
+    # 构建模板填充上下文
+    context = {
+        "keyword": keyword,
+        "vehicle": vehicle_key,
+        "image0": image0,
+        "scene0": scene0,
+        "narrative": narrative,
+        "emotion": emotion,
+        "field": field,
+        "audience": audience,
+        "positioning": positioning,
+    }
+
     # 1. 车型 × 叙事/情绪/领域的预设模板
     templates = ANGLE_TEMPLATES.get(vehicle_key, {})
     for key in [narrative, emotion, field, "default"]:
@@ -52,166 +66,9 @@ def generate_content_angles(
                     }
                 )
 
-    # 2. 通用动态模板（按内容形式/平台分类）
-    dynamic_patterns = [
-        # ---- 短视频 / 创意视频 ----
-        {
-            "template": "《当{keyword}刷屏，{vehicle}用{image0}回应》",
-            "type": "短视频",
-            "platform": "抖音 / 视频号",
-        },
-        {
-            "template": "《{keyword}背后，{vehicle}想说的是{image0}》",
-            "type": "短视频",
-            "platform": "抖音 / 视频号",
-        },
-        {
-            "template": "《{vehicle}车主的一天：{keyword}之后，回到{scene0}》",
-            "type": "短视频",
-            "platform": "抖音 / 视频号",
-        },
-        {
-            "template": "《如果{keyword}是一辆车，大概就是{vehicle}的样子》",
-            "type": "创意视频",
-            "platform": "B站 / 抖音",
-        },
-        {
-            "template": "《把{keyword}拍成一支{vehicle}广告，会是什么样？》",
-            "type": "创意视频",
-            "platform": "B站 / 抖音",
-        },
-        {
-            "template": "《{vehicle}回应{keyword}：本色出演》",
-            "type": "短视频",
-            "platform": "抖音 / 视频号",
-        },
-        {
-            "template": "《从{keyword}到{vehicle}：{narrative}的两种表达》",
-            "type": "短视频",
-            "platform": "抖音 / 视频号",
-            "requires": ["narrative"],
-        },
-        {
-            "template": "《{vehicle}的{scene0}，刚好装得下{keyword}的{emotion}》",
-            "type": "短视频",
-            "platform": "抖音 / 视频号",
-            "requires": ["emotion"],
-        },
-        {
-            "template": "《挑战：用{vehicle}的{scene0}接住{keyword}》",
-            "type": "短视频",
-            "platform": "抖音 / 视频号",
-        },
-        {
-            "template": "《从{keyword}聊到{vehicle}，{narrative}还能这么拍》",
-            "type": "创意视频",
-            "platform": "B站",
-            "requires": ["narrative"],
-        },
-        {
-            "template": "《用{vehicle}的{image0}，重新理解{keyword}》",
-            "type": "短视频",
-            "platform": "抖音 / 视频号",
-        },
-        # ---- 图文 / 长图文 / 讨论 ----
-        {
-            "template": "《别人在聊{keyword}，{vehicle}守住{image0}》",
-            "type": "图文",
-            "platform": "微博 / 知乎",
-        },
-        {
-            "template": "《为什么{keyword}让{vehicle}有了新话题？》",
-            "type": "讨论",
-            "platform": "知乎 / 微博",
-        },
-        {
-            "template": "《{keyword}火了，{vehicle}的{image0}刚刚好》",
-            "type": "小红书笔记",
-            "platform": "小红书",
-        },
-        {
-            "template": "《{vehicle} × {keyword}｜{emotion}出行氛围感》",
-            "type": "小红书笔记",
-            "platform": "小红书",
-            "requires": ["emotion"],
-        },
-        {
-            "template": "《不聊参数，只聊{emotion}：{vehicle}与{keyword}》",
-            "type": "图文",
-            "platform": "小红书 / 微博",
-            "requires": ["emotion"],
-        },
-        {
-            "template": "《这届{audience}都在追{keyword}，{vehicle}怎么接？》",
-            "type": "讨论",
-            "platform": "知乎 / 微博",
-            "requires": ["audience"],
-        },
-        {
-            "template": "《当{field}遇上{vehicle}，{narrative}有了新答案》",
-            "type": "图文",
-            "platform": "知乎 / 微博",
-            "requires": ["field", "narrative"],
-        },
-        {
-            "template": "《{keyword}之后，{vehicle}给{audience}的一个选择》",
-            "type": "图文",
-            "platform": "小红书 / 微博",
-            "requires": ["audience"],
-        },
-        {
-            "template": "《{vehicle}车主视角：{keyword}下的{scene0}》",
-            "type": "小红书笔记",
-            "platform": "小红书",
-        },
-        # ---- 新增：微信公众号长图文 / 知乎深度 / 微博 thread ----
-        {
-            "template": "《从{keyword}看{vehicle}：写给{audience}的深度解读》",
-            "type": "长图文",
-            "platform": "微信公众号",
-            "requires": ["audience"],
-        },
-        {
-            "template": "《{keyword}背后，{vehicle}如何用{image0}回应这个时代？》",
-            "type": "长图文",
-            "platform": "微信公众号 / 知乎",
-        },
-        {
-            "template": "《知乎回答：如何评价{keyword}与{vehicle}的这次相遇？》",
-            "type": "讨论",
-            "platform": "知乎",
-        },
-        {
-            "template": "《{keyword}刷屏，{vehicle}做对了什么？一篇微博图文 thread》",
-            "type": "图文",
-            "platform": "微博",
-        },
-        {
-            "template": "《当{keyword}成为焦点，{vehicle}选择用实力回应》",
-            "type": "长图文",
-            "platform": "微信公众号",
-        },
-        {
-            "template": "《{vehicle} × {keyword}：一份给{audience}的购车参考》",
-            "type": "长图文",
-            "platform": "微信公众号 / 知乎",
-            "requires": ["audience"],
-        },
-    ]
-
-    context = {
-        "keyword": keyword,
-        "vehicle": vehicle_key,
-        "image0": image0,
-        "scene0": scene0,
-        "narrative": narrative,
-        "emotion": emotion,
-        "field": field,
-        "audience": audience,
-        "positioning": positioning,
-    }
-
-    for p in dynamic_patterns:
+    # 2. 创意角度库（按叙事原型 / 情绪 / 领域 / 人群动态筛选）
+    creative_templates = get_creative_templates(narrative, emotion, field, audience)
+    for p in creative_templates:
         reqs = p.get("requires", [])
         if all(context.get(r) for r in reqs):
             try:
@@ -221,7 +78,7 @@ def generate_content_angles(
                         "angle": text,
                         "type": p["type"],
                         "platform": p["platform"],
-                        "source": "动态生成",
+                        "source": "创意库",
                     }
                 )
             except KeyError:
