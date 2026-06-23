@@ -175,6 +175,43 @@ def _rewrite_once(text: str, seed: int = 0) -> str:
     return new_text
 
 
+def _mask_terms(texts: List[str], terms: List[str]) -> tuple:
+    """把 texts 中出现的 terms 替换成占位符，返回 (masked_texts, placeholders_map)。"""
+    terms = sorted(set(t for t in terms if t), key=len, reverse=True)
+    if not terms:
+        return texts, {}
+
+    placeholders = {}
+    masked = []
+    for idx, text in enumerate(texts):
+        new_text = text
+        for t in terms:
+            if t in new_text:
+                placeholder = f"__PH_{len(placeholders)}__"
+                placeholders[placeholder] = t
+                new_text = new_text.replace(t, placeholder)
+        masked.append(new_text)
+    return masked, placeholders
+
+
+def _unmask_terms(texts: List[str], placeholders: dict) -> List[str]:
+    """把占位符恢复成原始术语。"""
+    if not placeholders:
+        return texts
+    restored = []
+    for text in texts:
+        new_text = text
+        # 按占位符编号从大到小，避免短占位符覆盖长的
+        for ph in sorted(
+            placeholders.keys(),
+            key=lambda x: int(x.replace("__PH_", "").replace("__", "")),
+            reverse=True,
+        ):
+            new_text = new_text.replace(ph, placeholders[ph])
+        restored.append(new_text)
+    return restored
+
+
 def _diversify_texts(
     texts: List[str],
     max_rate: float = 0.1,
@@ -187,18 +224,19 @@ def _diversify_texts(
     对文本列表做迭代改写，直到重复度低于 max_rate。
     保持列表长度和顺序不变。
     exclude_texts 中的文本会被从重复度计算中剔除（如意外的 slogan/角度原文重复）。
-    excluded_terms 中的词会在计算相似度时忽略（如品牌名、话题词）。
+    excluded_terms 中的词会在计算相似度时忽略，并在改写时被保护（如品牌名、话题词）。
     threshold 定义“高相似”的 containment_similarity 阈值。
     """
     texts = list(texts)
     exclude_set = set(exclude_texts or [])
+    terms = [t for t in (excluded_terms or []) if t]
 
     def _filtered(items):
         return [t for t in items if t and str(t).strip() and str(t).strip() not in exclude_set]
 
     for _ in range(max_iter):
         filtered = _filtered(texts)
-        rate = _repetition_rate(filtered, threshold=threshold, excluded_terms=excluded_terms)
+        rate = _repetition_rate(filtered, threshold=threshold, excluded_terms=terms)
         if rate <= max_rate:
             break
 
@@ -207,7 +245,7 @@ def _diversify_texts(
         worst_sim = -1.0
         valid_indices = [i for i, t in enumerate(texts) if str(t).strip() not in exclude_set]
         for i, j in combinations(valid_indices, 2):
-            sim = _containment_similarity(texts[i], texts[j], excluded_terms=excluded_terms)
+            sim = _containment_similarity(texts[i], texts[j], excluded_terms=terms)
             if sim > worst_sim:
                 worst_sim = sim
                 worst_pair = (i, j)
@@ -217,16 +255,24 @@ def _diversify_texts(
 
         idx_to_rewrite = worst_pair[1]
         original = texts[idx_to_rewrite]
-        rewritten = original
+
+        # 改写前先把受保护术语 mask 掉，避免被同义替换破坏
+        masked_original, placeholders = _mask_terms([original], terms)
+        masked_original = masked_original[0]
+
+        rewritten = masked_original
         changed = False
         for seed in range(20):
-            rewritten = _rewrite_once(original, seed=seed)
-            if rewritten != original:
+            rewritten = _rewrite_once(masked_original, seed=seed)
+            if rewritten != masked_original:
                 changed = True
                 break
         if not changed:
             # 已无法通过同义替换降低重复，终止
             break
+
+        # 恢复受保护术语
+        rewritten = _unmask_terms([rewritten], placeholders)[0]
         texts[idx_to_rewrite] = rewritten
 
     return texts
