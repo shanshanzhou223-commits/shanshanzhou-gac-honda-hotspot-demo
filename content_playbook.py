@@ -219,6 +219,7 @@ def _diversify_texts(
     exclude_texts: List[str] = None,
     threshold: float = 0.5,
     excluded_terms: List[str] = None,
+    ensure_no_identical: bool = False,
 ) -> List[str]:
     """
     对文本列表做迭代改写，直到重复度低于 max_rate。
@@ -226,6 +227,7 @@ def _diversify_texts(
     exclude_texts 中的文本会被从重复度计算中剔除（如意外的 slogan/角度原文重复）。
     excluded_terms 中的词会在计算相似度时忽略，并在改写时被保护（如品牌名、话题词）。
     threshold 定义“高相似”的 containment_similarity 阈值。
+    ensure_no_identical=True 时，即使整体重复度已达标，仍会继续消除完全相同的文本对。
     """
     texts = list(texts)
     exclude_set = set(exclude_texts or [])
@@ -234,16 +236,25 @@ def _diversify_texts(
     def _filtered(items):
         return [t for t in items if t and str(t).strip() and str(t).strip() not in exclude_set]
 
+    def _has_identical_pair(indices):
+        if not ensure_no_identical:
+            return False
+        for i, j in combinations(indices, 2):
+            if _containment_similarity(texts[i], texts[j], excluded_terms=terms) >= 0.99:
+                return True
+        return False
+
     for _ in range(max_iter):
         filtered = _filtered(texts)
         rate = _repetition_rate(filtered, threshold=threshold, excluded_terms=terms)
-        if rate <= max_rate:
+        valid_indices = [i for i, t in enumerate(texts) if str(t).strip() not in exclude_set]
+
+        if rate <= max_rate and not _has_identical_pair(valid_indices):
             break
 
         # 只在非排除文本中找最相似的一对
         worst_pair = None
         worst_sim = -1.0
-        valid_indices = [i for i, t in enumerate(texts) if str(t).strip() not in exclude_set]
         for i, j in combinations(valid_indices, 2):
             sim = _containment_similarity(texts[i], texts[j], excluded_terms=terms)
             if sim > worst_sim:
@@ -251,29 +262,42 @@ def _diversify_texts(
                 worst_pair = (i, j)
 
         if worst_pair is None or worst_sim < threshold:
-            break
-
-        idx_to_rewrite = worst_pair[1]
-        original = texts[idx_to_rewrite]
-
-        # 改写前先把受保护术语 mask 掉，避免被同义替换破坏
-        masked_original, placeholders = _mask_terms([original], terms)
-        masked_original = masked_original[0]
-
-        rewritten = masked_original
-        changed = False
-        for seed in range(20):
-            rewritten = _rewrite_once(masked_original, seed=seed)
-            if rewritten != masked_original:
-                changed = True
+            # ensure_no_identical 模式下，若只剩完全相同对但 threshold 不够低，仍继续处理
+            if not (ensure_no_identical and worst_sim >= 0.99):
                 break
-        if not changed:
-            # 已无法通过同义替换降低重复，终止
-            break
 
-        # 恢复受保护术语
-        rewritten = _unmask_terms([rewritten], placeholders)[0]
-        texts[idx_to_rewrite] = rewritten
+        # 如果两个文本几乎完全相同，同时对两者做不同改写，避免只改一个导致高相似对数量不变
+        if worst_sim >= 0.99:
+            indices_to_rewrite = [worst_pair[0], worst_pair[1]]
+        else:
+            indices_to_rewrite = [worst_pair[1]]
+
+        for idx in indices_to_rewrite:
+            original = texts[idx]
+
+            # 改写前先把受保护术语 mask 掉，避免被同义替换破坏
+            masked_original, placeholders = _mask_terms([original], terms)
+            masked_original = masked_original[0]
+
+            rewritten = masked_original
+            changed = False
+            for seed in range(20):
+                rewritten = _rewrite_once(masked_original, seed=seed + idx)
+                if rewritten != masked_original:
+                    changed = True
+                    break
+            if not changed:
+                # 已无法通过同义替换降低重复，终止
+                break
+
+            # 恢复受保护术语
+            rewritten = _unmask_terms([rewritten], placeholders)[0]
+            texts[idx] = rewritten
+        else:
+            # 正常完成本轮改写，继续下一轮
+            continue
+        # 因无法继续改写而 break 时会走到这里
+        break
 
     return texts
 
@@ -339,6 +363,162 @@ def _detect_angle_themes(angle_text: str) -> List[str]:
     return themes
 
 
+def _angle_flavor(angle_text: str, themes: set) -> set:
+    """
+    从内容角度文本中提取更细粒度的叙事 flavor，
+    让同一主题大类下的不同角度也能生成差异化的画面。
+    """
+    text = angle_text.lower()
+    flavor = set()
+
+    # 运动主题下的细分叙事
+    if "sport" in themes or any(k in text for k in ["运动", "冠军", "赛道", "热血", "速度", "驾驶乐趣"]):
+        if any(k in text for k in ["冠军", "胜者", "金牌", "领奖台", "追冠军", "冠军时刻", "赢家"]):
+            flavor.add("champion")
+        if any(k in text for k in ["极限", "挑战", "刷新", "突破", "不服输", "再试一次", "纪录"]):
+            flavor.add("challenge")
+        if any(k in text for k in ["改装", "玩车", "姿态", "低趴", "个性", "调校", "爆改"]):
+            flavor.add("modify")
+        if any(k in text for k in ["青年", "年轻人", "年轻", "热血青年", "态度", "青春", "新生代"]):
+            flavor.add("youth")
+        if any(k in text for k in ["赛道", "弯道", "操控", "驾驶乐趣", "过弯", "性能", "竞速"]):
+            flavor.add("track")
+        # 兜底：确保至少有一个 flavor
+        if not flavor:
+            flavor.add("track")
+
+    return flavor
+
+
+def _sport_visuals(angle_text: str, flavor: set, keyword: str, vehicle: str, scene0: str, image0: str) -> Dict[str, str]:
+    """
+    根据运动主题的细分 flavor 与角度原文中的主导关键词，
+    生成完整、差异化的视频画面描述（含景别/运镜），覆盖 15s / 20s / 30s 三版结构。
+    当 angle 同时命中多个 flavor 时，按关键词信号强度选择最贴合的主导 flavor。
+    """
+    text = angle_text.lower()
+
+    # 计算各 flavor 在 angle 原文中的信号强度
+    flavor_weights = {
+        "champion": sum(1 for k in ["冠军", "胜者", "金牌", "领奖台", "追冠军", "冠军时刻", "赢家"] if k in text),
+        "challenge": sum(1 for k in ["极限", "挑战", "刷新", "突破", "不服输", "再试一次", "纪录"] if k in text),
+        "modify": sum(1 for k in ["改装", "玩车", "姿态", "低趴", "个性", "调校", "爆改"] if k in text),
+        "youth": sum(1 for k in ["青年", "年轻人", "年轻", "热血青年", "态度", "青春", "新生代"] if k in text),
+        "track": sum(1 for k in ["赛道", "弯道", "操控", "驾驶乐趣", "过弯", "性能", "竞速"] if k in text),
+    }
+
+    # 在已检测到的 flavor 中，按信号强度选择；若强度相同，按优先级选择更具体的叙事方向。
+    # 优先级：track > modify > challenge > champion > youth
+    # "冠军"容易被话题关键词（如世界冠军）误触发，因此让更明确的动作词优先；
+    # youth 相对宽泛，放在最后，使含"追冠军"的角度优先走 champion 路线。
+    priority_order = ["track", "modify", "challenge", "champion", "youth"]
+    best_flavor = "track"
+    best_weight = -1
+    for f in flavor:
+        w = flavor_weights.get(f, 0)
+        current_priority = priority_order.index(f) if f in priority_order else 99
+        best_priority = priority_order.index(best_flavor) if best_flavor in priority_order else 99
+        if w > best_weight or (w == best_weight and current_priority < best_priority):
+            best_weight = w
+            best_flavor = f
+    if best_weight <= 0:
+        best_flavor = "track"
+
+    # 默认 track（赛道/操控）风格的完整画面描述
+    hot_15_v = f"【全景+快切】赛道、计时器、挥动的黑白格旗与「{keyword}」热血大字交错闪现，高对比色调。"
+    veh_15_v = f"【中景跟拍】{vehicle}以运动姿态切入弯道，轮胎摩擦地面，车身低伏；{scene0}变成赛道场景。"
+    pro_15_v = f"【特写+环绕】运动套件、方向盘、转速表、刹车卡钳快速切换，{image0}在速度线中定格，车标落版。"
+    hot20a_v = f"【特写+快切】冠军画面、计时器、赛道弯道与「{keyword}」大字交错，高饱和度。"
+    hot20b_v = f"【中景】运动员/车主擦汗、眼神坚定；窗外光线为热血橙红。"
+    veh20a_v = f"【全景】{vehicle}在山路/赛道疾驰，车身姿态低伏，轮胎带起烟雾。"
+    veh20b_v = f"【车内中景】手握方向盘换挡，转速表攀升；运动座椅包裹，{image0}在驾驶激情中呈现。"
+    pro20_v = f"【特写+环绕+落版】运动套件、卡钳、尾翼、排气管特写，{image0}在速度线中落版。"
+    hot30a_v = f"【全景+叠化】赛事画面、冠军庆祝、计时器、热搜榜单快速叠化，「{keyword}」以热血大字出现。"
+    hot30b_v = f"【中景】观众/网友兴奋反应快切，画面高对比、热血色调。"
+    veh30a_v = f"【全景跟拍】{vehicle}在山路/赛道疾驰，镜头与车辆同向移动；背景有速度线和运动符号。"
+    veh30b_v = f"【中景+车内】车主激情驾驶，换挡、过弯；{image0}在驾驶氛围中被强调。"
+    pro30a_v = f"【特写组接】运动套件、方向盘、仪表盘、刹车卡钳依次呈现，{image0}细节在速度线中。"
+    pro30b_v = f"【落版全景】{vehicle}停在赛道/山路尽头，车标正对镜头；画面右侧Slogan，底部联名字样。"
+
+    if best_flavor == "champion":
+        hot_15_v = f"【全景+快切】冠军奖杯、领奖台、金色飘带与「{keyword}」热血大字交错闪现，高对比色调。"
+        veh_15_v = f"【中景跟拍】{vehicle}如冠军冲线般从画面一侧疾驰而入，车身姿态昂扬；{scene0}化作冠军时刻。"
+        pro_15_v = f"【特写+环绕】冠军徽章、运动套件、方向盘、刹车卡钳快速切换，{image0}在金色光线中定格，车标落版。"
+        hot20a_v = f"【特写+快切】冠军奖杯、领奖台、金色飘带与「{keyword}」大字交错，高饱和度。"
+        hot20b_v = f"【中景】冠军振臂庆祝，眼神坚定；窗外洒下金色光芒。"
+        veh20a_v = f"【全景】{vehicle}以胜利姿态驶过终点线，车身昂扬，彩带飞舞。"
+        veh20b_v = f"【车内中景】车主握紧方向盘，目光如炬；{image0}在冠军光芒中被强调。"
+        pro20_v = f"【特写+环绕+落版】冠军徽标、运动套件、尾翼、排气管特写，{image0}在金色速度线中落版。"
+        hot30a_v = f"【全景+叠化】冠军时刻、领奖台、金色飘带、热搜榜单快速叠化，「{keyword}」以热血大字出现。"
+        hot30b_v = f"【中景】观众欢呼、冠军庆祝快切，画面高对比、金色热血色调。"
+        veh30a_v = f"【全景跟拍】{vehicle}如冠军座驾般驶过红毯/终点线，镜头与车辆同向移动；背景有彩带和冠军符号。"
+        veh30b_v = f"【中景+车内】车主自信驾驶，享受胜利时刻；{image0}在荣耀氛围中被强调。"
+        pro30a_v = f"【特写组接】冠军徽章、运动套件、方向盘、刹车卡钳依次呈现，{image0}细节在金色光线中。"
+        pro30b_v = f"【落版全景】{vehicle}停在领奖台/冠军拱门前，车标正对镜头；画面右侧Slogan，底部联名字样。"
+    elif best_flavor == "challenge":
+        hot_15_v = f"【大特写+快切】计时器特写、不断刷新的纪录数字、汗水滑落与「{keyword}」热血大字交错闪现，高对比色调。"
+        veh_15_v = f"【中景】{vehicle}在险峻山路/赛道挑战极限，轮胎紧贴地面，车身低伏蓄势；{scene0}化作挑战之路。"
+        pro_15_v = f"【大特写+环绕】性能仪表、转速表、刹车卡钳、运动套件快速切换，{image0}在突破瞬间定格，车标落版。"
+        hot20a_v = f"【大特写+快切】计时器、刷新中的纪录数字、汗水特写与「{keyword}」大字交错，高饱和度。"
+        hot20b_v = f"【中景】挑战者凝视远方、目光坚毅；窗外是晨曦微光。"
+        veh20a_v = f"【全景跟拍】{vehicle}在险峻山路/赛道连续攻弯，车身紧贴地面，轮胎扬起微尘。"
+        veh20b_v = f"【车内近景】车主专注过弯，转速表指针攀升；{image0}在极限驾驶中被强调。"
+        pro20_v = f"【特写+环绕+落版】性能仪表、刹车卡钳、运动套件、尾翼特写，{image0}在突破瞬间落版。"
+        hot30a_v = f"【特写+叠化】纪录刷新、计时器特写、汗水与热搜榜单快速叠化，「{keyword}」以热血大字出现。"
+        hot30b_v = f"【中景】挑战者坚毅表情、训练片段快切，画面高对比、燃色调。"
+        veh30a_v = f"【全景跟拍】{vehicle}在连续弯道中疾驰，镜头与车辆同向移动；背景有计时器和纪录数字。"
+        veh30b_v = f"【中景+车内】车主挑战极限，换挡、刹车、再加速；{image0}在坚持中被强调。"
+        pro30a_v = f"【特写组接】性能仪表、方向盘、刹车卡钳、运动套件依次呈现，{image0}细节在速度线中。"
+        pro30b_v = f"【落版全景】{vehicle}停在山巅/终点线前，车标正对镜头；画面右侧Slogan，底部联名字样。"
+    elif best_flavor == "modify":
+        hot_15_v = f"【中景+环绕】改装车间、个性涂装、低趴姿态与「{keyword}」热血大字交错闪现，工业灯光氛围。"
+        veh_15_v = f"【中景跟拍】{vehicle}以改装姿态驶入街头，轮毂、尾翼、包围套件引人注目；{scene0}变成改装聚落。"
+        pro_15_v = f"【微距+环绕】改装套件、卡钳、轮毂、方向盘快速切换，{image0}在个性光影中定格，车标落版。"
+        hot20a_v = f"【中景+快切】改装车间、个性涂装、低趴姿态与「{keyword}」大字交错，高饱和度。"
+        hot20b_v = f"【特写】改装玩家俯身检查细节，眼神专注；窗外是城市改装聚落。"
+        veh20a_v = f"【全景】{vehicle}以低趴改装姿态停在街头，车身涂装个性鲜明。"
+        veh20b_v = f"【车内中景】玩家坐进驾驶位，手握改装方向盘；{image0}在改装氛围中被强调。"
+        pro20_v = f"【微距+环绕+落版】改装包围、卡钳、轮毂、排气特写，{image0}在个性光影中落版。"
+        hot30a_v = f"【中景+叠化】改装案例、个性涂装、低趴姿态与热搜榜单快速叠化，「{keyword}」以热血大字出现。"
+        hot30b_v = f"【中景】改装玩家交流、围观人群快切，画面高对比、街头潮流色调。"
+        veh30a_v = f"【全景跟拍】{vehicle}以改装姿态穿行城市街道，镜头与车辆同向移动；背景有涂鸦和改装符号。"
+        veh30b_v = f"【中景+车内】玩家驾驶{vehicle}，享受专属调校；{image0}在个性表达中被强调。"
+        pro30a_v = f"【特写组接】改装套件、方向盘、轮毂、刹车卡钳依次呈现，{image0}细节在街头光线下。"
+        pro30b_v = f"【落版全景】{vehicle}停在改装聚落/城市天台，车标正对镜头；画面右侧Slogan，底部联名字样。"
+    elif best_flavor == "youth":
+        hot_15_v = f"【全景+推拉】年轻人群欢呼、街头赛道、潮流符号与「{keyword}」热血大字交错闪现，霓虹色调。"
+        veh_15_v = f"【中景跟拍】{vehicle}与年轻车主一同出现在城市街头，车身动感，气氛热烈；{scene0}变成潮流街区。"
+        pro_15_v = f"【特写+环绕】潮流涂装、运动座椅、方向盘、车灯快速切换，{image0}在年轻姿态中定格，车标落版。"
+        hot20a_v = f"【全景+快切】年轻人刷手机、街头潮流符号与「{keyword}」大字交错，高饱和度。"
+        hot20b_v = f"【中景】年轻车主整理衣领/戴上耳机，眼神有光；窗外是霓虹城市。"
+        veh20a_v = f"【全景跟拍】{vehicle}与年轻车主一起出现在城市夜景中，车身被霓虹照亮。"
+        veh20b_v = f"【车内中景】年轻车主手握方向盘，随音乐点头；{image0}在年轻氛围中被强调。"
+        pro20_v = f"【特写+环绕+落版】潮流配色、运动座椅、方向盘、车灯特写，{image0}在年轻光影中落版。"
+        hot30a_v = f"【全景+叠化】年轻人热议、潮流符号、街头夜景与热搜榜单快速叠化，「{keyword}」以热血大字出现。"
+        hot30b_v = f"【中景】年轻人群欢呼、自拍快切，画面高饱和、潮流色调。"
+        veh30a_v = f"【全景跟拍】{vehicle}载着年轻车主穿行霓虹街道，镜头与车辆同向移动；背景有潮流涂鸦。"
+        veh30b_v = f"【中景+车内】年轻车主驾驶{vehicle}，享受属于自己的时刻；{image0}在青春氛围中被强调。"
+        pro30a_v = f"【特写组接】潮流涂装、运动座椅、方向盘、轮毂依次呈现，{image0}细节在霓虹灯光中。"
+        pro30b_v = f"【落版全景】{vehicle}停在城市天台/潮流街区，车标正对镜头；画面右侧Slogan，底部联名字样。"
+
+    return {
+        "hot_15_v": hot_15_v,
+        "veh_15_v": veh_15_v,
+        "pro_15_v": pro_15_v,
+        "hot20a_v": hot20a_v,
+        "hot20b_v": hot20b_v,
+        "veh20a_v": veh20a_v,
+        "veh20b_v": veh20b_v,
+        "pro20_v": pro20_v,
+        "hot30a_v": hot30a_v,
+        "hot30b_v": hot30b_v,
+        "veh30a_v": veh30a_v,
+        "veh30b_v": veh30b_v,
+        "pro30a_v": pro30a_v,
+        "pro30b_v": pro30b_v,
+    }
+
+
 def _theme_pack(
     themes: List[str],
     keyword: str,
@@ -354,6 +534,10 @@ def _theme_pack(
 ) -> Dict[str, str]:
     """为主题生成差异化的画面、台词、音效元素。"""
     t = set(themes)
+    flavor = _angle_flavor(angle, t)
+    sport_vis = None
+    if "sport" in t:
+        sport_vis = _sport_visuals(angle, flavor, keyword, vehicle, scene0, image0)
 
     # 15秒：优先用生活/车主故事主题，再按太空/AI/未来/运动/家庭
     if "life" in t:
@@ -393,12 +577,12 @@ def _theme_pack(
         pro_15_sub = f"{vehicle}｜科技进化的下一个答案"
         pro_15_s = "未来感合成器 + 落版重音"
     elif "sport" in t:
-        hot_15_v = f"【全景+快切】赛道、计时器、挥动的黑白格旗与「{keyword}」热血大字交错闪现，高对比色调。"
+        hot_15_v = sport_vis['hot_15_v']
         hot_15_s = "引擎轰鸣 + 强烈鼓点 + 观众欢呼"
-        veh_15_v = f"【中景跟拍】{vehicle}以运动姿态切入弯道，轮胎摩擦地面，车身低伏；{scene0}变成赛道场景。"
+        veh_15_v = sport_vis['veh_15_v']
         veh_15_sub = f"{vehicle} · {positioning}｜和{keyword}一样，热血到底"
         veh_15_s = "引擎声 + 运动摇滚"
-        pro_15_v = f"【特写+环绕】运动套件、方向盘、转速表、刹车卡钳快速切换，{image0}在速度线中定格，车标落版。"
+        pro_15_v = sport_vis['pro_15_v']
         pro_15_sub = f"{vehicle}｜赛道基因，不需要解释"
         pro_15_s = "高潮鼓点 + 引擎收声"
     elif "family" in t:
@@ -466,15 +650,15 @@ def _theme_pack(
         pro20_v = f"【特写+环绕+落版】{vehicle}贯穿灯、车身曲面、智能座舱、LOGO依次点亮，{image0}在光粒子中落版。"
         pro20_s = "未来感合成器高潮 + 落版重音"
     elif "sport" in t:
-        hot20a_v = f"【特写+快切】冠军画面、计时器、赛道弯道与「{keyword}」大字交错，高饱和度。"
+        hot20a_v = sport_vis['hot20a_v']
         hot20a_s = "引擎轰鸣 + 强烈鼓点"
-        hot20b_v = f"【中景】运动员/车主擦汗、眼神坚定；窗外光线为热血橙红。"
+        hot20b_v = sport_vis['hot20b_v']
         hot20b_s = "运动摇滚渐入"
-        veh20a_v = f"【全景】{vehicle}在山路/赛道疾驰，车身姿态低伏，轮胎带起烟雾。"
+        veh20a_v = sport_vis['veh20a_v']
         veh20a_s = "引擎声 + 运动音乐"
-        veh20b_v = f"【车内中景】手握方向盘换挡，转速表攀升；运动座椅包裹，{image0}在驾驶激情中呈现。"
+        veh20b_v = sport_vis['veh20b_v']
         veh20b_s = "换挡声 + 音乐推进"
-        pro20_v = f"【特写+环绕+落版】运动套件、卡钳、尾翼、排气管特写，{image0}在速度线中落版。"
+        pro20_v = sport_vis['pro20_v']
         pro20_s = "高潮鼓点 + 引擎收声"
     elif "family" in t:
         hot20a_v = f"【特写+快切】家庭相关热搜、亲子视频、评论区与「{keyword}」同框，色调暖黄。"
@@ -553,17 +737,17 @@ def _theme_pack(
         pro30b_v = f"【落版全景】{vehicle}停在未来感城市背景前，车标正对镜头；画面右侧Slogan，底部联名字样。"
         pro30b_s = "高潮落版音效，音乐收"
     elif "sport" in t:
-        hot30a_v = f"【全景+叠化】赛事画面、冠军庆祝、计时器、热搜榜单快速叠化，「{keyword}」以热血大字出现。"
+        hot30a_v = sport_vis['hot30a_v']
         hot30a_s = "引擎轰鸣 + 悬念音效"
-        hot30b_v = f"【中景】观众/网友兴奋反应快切，画面高对比、热血色调。"
+        hot30b_v = sport_vis['hot30b_v']
         hot30b_s = "人群欢呼 + 键盘敲击"
-        veh30a_v = f"【全景跟拍】{vehicle}在山路/赛道疾驰，镜头与车辆同向移动；背景有速度线和运动符号。"
+        veh30a_v = sport_vis['veh30a_v']
         veh30a_s = "运动摇滚进入副歌前奏"
-        veh30b_v = f"【中景+车内】车主激情驾驶，换挡、过弯；{image0}在驾驶氛围中被强调。"
+        veh30b_v = sport_vis['veh30b_v']
         veh30b_s = "副歌旋律起，情绪上扬"
-        pro30a_v = f"【特写组接】运动套件、方向盘、仪表盘、刹车卡钳依次呈现，{image0}细节在速度线中。"
+        pro30a_v = sport_vis['pro30a_v']
         pro30a_s = "节奏鼓点 + 电子音效"
-        pro30b_v = f"【落版全景】{vehicle}停在赛道/山路尽头，车标正对镜头；画面右侧Slogan，底部联名字样。"
+        pro30b_v = sport_vis['pro30b_v']
         pro30b_s = "高潮落版音效，音乐收"
     elif "family" in t:
         hot30a_v = f"【全景+叠化】家庭相关新闻、亲子视频、节日场景、热搜榜单快速叠化，「{keyword}」以温暖大字出现。"
@@ -1578,6 +1762,32 @@ def generate_topic_playbook(
         video_scripts[label] = generate_video_script(
             topic, vehicle_key, angle=va["angle"]
         )
+
+    # ---------- 跨角度画面描述全局去重 ----------
+    # 同一个热点下，不同角度的视频脚本容易出现画面描述雷同。
+    # 这里收集全部 shots 的画面描述做一次全局改写，再写回。
+    all_visual_refs = []  # (label, duration_idx, act_idx, shot_idx)
+    all_visuals = []
+    for label, scripts in video_scripts.items():
+        for d_idx, d in enumerate(scripts):
+            for a_idx, act in enumerate(d["acts"]):
+                for s_idx, shot in enumerate(act["shots"]):
+                    all_visual_refs.append((label, d_idx, a_idx, s_idx))
+                    all_visuals.append(shot["画面描述"])
+
+    if len(all_visuals) >= 2:
+        vehicle = VEHICLES.get(vehicle_key, VEHICLES["雅阁"])["name"]
+        keyword = _topic_keyword(topic["topic"])
+        diversified_visuals = _diversify_texts(
+            all_visuals,
+            max_rate=0.08,
+            max_iter=60,
+            threshold=0.4,
+            excluded_terms=[vehicle, keyword, vehicle_key] if vehicle_key else [vehicle, keyword],
+            ensure_no_identical=True,
+        )
+        for (label, d_idx, a_idx, s_idx), new_visual in zip(all_visual_refs, diversified_visuals):
+            video_scripts[label][d_idx]["acts"][a_idx]["shots"][s_idx]["画面描述"] = new_visual
 
     graphic_copies = {}
     for i, ga in enumerate(graphic_angles, start=1):
