@@ -4,6 +4,7 @@
 """
 import io
 import os
+import subprocess
 import urllib.request
 
 import jieba
@@ -1765,6 +1766,22 @@ A库（车型标签） + B库（热点标签）
     st.dataframe(narrative_map_df, use_container_width=True, hide_index=True)
 
 st.divider()
+
+# 显示当前部署版本，便于排查 Streamlit Cloud 缓存/部署问题
+def _get_git_revision() -> str:
+    try:
+        return (
+            subprocess.check_output(
+                ["git", "rev-parse", "--short", "HEAD"],
+                cwd=os.path.dirname(os.path.abspath(__file__)),
+            )
+            .decode("utf-8")
+            .strip()
+        )
+    except Exception:
+        return "unknown"
+
 st.caption(
-    "说明：本 Demo 的自动标签基于关键词规则，便于演示；未来可接入 LLM 或 Embedding 模型做更精准的语义匹配。"
+    f"说明：本 Demo 的自动标签基于关键词规则，便于演示；未来可接入 LLM 或 Embedding 模型做更精准的语义匹配。"
+    f"\n\n🛠️ 当前部署版本：`{_get_git_revision()}`"
 )
