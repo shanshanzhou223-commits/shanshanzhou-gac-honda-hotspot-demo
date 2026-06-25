@@ -1271,16 +1271,28 @@ with tab3:
                         classified_angles=classified_angles,
                     )
 
-                    # 再给出 TOP2 的角度（如果与 TOP1 同 tier 或分数接近）
-                    if len(rankings) >= 2 and rankings[1]["full_score"] >= top1["full_score"] - 8:
-                        top2 = rankings[1]
-                        with st.expander(f"查看次优车型 {top2['vehicle']} 的内容角度"):
-                            angles2 = generate_content_angles(
-                                topic_text, top2["vehicle"], labels, top2["match_types"], top_n=5
-                            )
-                            for a in angles2:
-                                st.markdown(
-                                    f"- **{a['type']}（{a['platform']}）**：{a['angle']}"
+                    # 再给出 TOP2/TOP3 的完整内容演绎方案（如果与 TOP1 同 tier 或分数接近）
+                    if len(rankings) >= 2:
+                        runner_ups = [r for r in rankings[1:4] if r["full_score"] >= top1["full_score"] - 12]
+                        for runner in runner_ups:
+                            with st.expander(f"🥈 查看次优车型 {runner['vehicle']} 的完整内容演绎方案"):
+                                st.caption(
+                                    f"完整分 {runner['full_score']} · 品牌契合 {runner['brand_fit']} · "
+                                    f"{runner['tier']} · 匹配类型：{' + '.join(runner['match_types'])}"
+                                )
+                                runner_angles = generate_classified_angles(
+                                    topic_text,
+                                    runner["vehicle"],
+                                    labels,
+                                    runner["match_types"],
+                                    video_n=5,
+                                    graphic_n=3,
+                                )
+                                render_content_playbook(
+                                    topic_for_playbook,
+                                    runner["vehicle"],
+                                    title=f"🎬 {runner['vehicle']} 深度内容演绎方案（视频脚本 / 平台文案 / 配图建议）",
+                                    classified_angles=runner_angles,
                                 )
                 else:
                     st.info("由于热点安全等级为「风险」，系统已停止生成内容角度。建议放弃该热点。")
