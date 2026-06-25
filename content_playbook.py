@@ -1923,9 +1923,9 @@ def generate_topic_playbook(
         keyword = _topic_keyword(topic["topic"])
         diversified_visuals = _global_diversify_visuals(
             all_visuals,
-            threshold=0.30,
-            max_rate=0.03,
-            max_iter=40,
+            threshold=0.50,
+            max_rate=0.10,
+            max_iter=15,
             excluded_terms=[vehicle, keyword, vehicle_key] if vehicle_key else [vehicle, keyword],
         )
         for (label, d_idx, a_idx, s_idx), new_visual in zip(all_visual_refs, diversified_visuals):

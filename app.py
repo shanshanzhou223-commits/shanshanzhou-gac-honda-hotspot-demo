@@ -536,7 +536,6 @@ def render_content_playbook(
     classified_angles: dict = None,
 ):
     """渲染完整的内容演绎模块：视频脚本 + 平台文案 + 视觉建议"""
-    st.write("🐞 DEBUG: entering render_content_playbook")
     try:
         playbook = generate_topic_playbook(topic, vehicle_key, classified_angles)
         v = VEHICLES[vehicle_key]
@@ -595,7 +594,7 @@ def render_content_playbook(
                 st.markdown(f"  - {tip}")
             st.info("💡 图片生成能力后续可接入 AI 绘图工具；当前先以文字版视觉方案呈现。")
     except Exception as e:
-        st.error(f"🐞 DEBUG render_content_playbook 异常：{type(e).__name__}: {e}")
+        st.error(f"内容演绎方案生成异常：{type(e).__name__}: {e}")
         import traceback
         st.code(traceback.format_exc())
 
@@ -1270,7 +1269,6 @@ with tab3:
                     st.dataframe(graphic_df, use_container_width=True, hide_index=True)
 
                     # 深度内容演绎：视频脚本 + 平台文案 + 视觉建议
-                    st.write("🐞 DEBUG: about to call render_content_playbook for TOP1")
                     topic_for_playbook = {"topic": topic_text, **labels}
                     render_content_playbook(
                         topic_for_playbook,
