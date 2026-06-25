@@ -332,6 +332,42 @@ def _global_diversify_visuals(
     def _current_rate() -> float:
         return _repetition_rate(texts, threshold=threshold, excluded_terms=terms)
 
+    # ---------- 预处理：强制消除完全相同的画面描述 ----------
+    # 同 _theme_pack 模板会产出大量 identical 描述，先批量打散它们，避免后续迭代浪费
+    def _remove_identical():
+        changed = False
+        # 按内容分组
+        groups = {}
+        for idx, text in enumerate(texts):
+            groups.setdefault(text, []).append(idx)
+        for text, indices in groups.items():
+            if len(indices) <= 1:
+                continue
+            # 保留第一个，改写其余的
+            for idx in indices[1:]:
+                if rewrite_counts[idx] >= 3:
+                    continue
+                masked_original, placeholders = _mask_terms([text], terms)
+                masked_original = masked_original[0]
+                rewritten = masked_original
+                for seed_base in range(20):
+                    candidate = _rewrite_once(masked_original, seed=seed_base + idx)
+                    if candidate != masked_original:
+                        rewritten = candidate
+                        break
+                rewritten = _unmask_terms([rewritten], placeholders)[0]
+                if rewritten != text:
+                    texts[idx] = rewritten
+                    rewrite_counts[idx] += 1
+                    changed = True
+        return changed
+
+    # 最多进行 5 轮预处理，直到没有完全相同对
+    for _ in range(5):
+        if not _remove_identical():
+            break
+
+    # ---------- 主迭代：继续降低高相似度 ----------
     for _ in range(max_iter):
         rate = _current_rate()
         if rate <= max_rate:
