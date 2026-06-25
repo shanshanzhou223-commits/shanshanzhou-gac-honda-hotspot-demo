@@ -536,62 +536,68 @@ def render_content_playbook(
     classified_angles: dict = None,
 ):
     """渲染完整的内容演绎模块：视频脚本 + 平台文案 + 视觉建议"""
-    playbook = generate_topic_playbook(topic, vehicle_key, classified_angles)
-    v = VEHICLES[vehicle_key]
+    st.write("🐞 DEBUG: entering render_content_playbook")
+    try:
+        playbook = generate_topic_playbook(topic, vehicle_key, classified_angles)
+        v = VEHICLES[vehicle_key]
 
-    st.markdown(f"**{title}** — 承接车型：`{v['name']}`")
+        st.markdown(f"**{title}** — 承接车型：`{v['name']}`")
 
-    # ---------- 视频分镜脚本 ----------
-    with st.expander("🎬 查看视频分镜脚本"):
-        video_scripts = playbook["视频脚本"]
+        # ---------- 视频分镜脚本 ----------
+        with st.expander("🎬 查看视频分镜脚本"):
+            video_scripts = playbook["视频脚本"]
 
-        # 兼容旧版：可能是平铺 list
-        if isinstance(video_scripts, list):
-            _render_legacy_video_scripts(video_scripts)
-        elif isinstance(video_scripts, dict):
-            if len(video_scripts) == 1:
-                # 只有默认或单个角度，直接展示
-                label, scripts = next(iter(video_scripts.items()))
-                _render_video_angle(label, scripts)
+            # 兼容旧版：可能是平铺 list
+            if isinstance(video_scripts, list):
+                _render_legacy_video_scripts(video_scripts)
+            elif isinstance(video_scripts, dict):
+                if len(video_scripts) == 1:
+                    # 只有默认或单个角度，直接展示
+                    label, scripts = next(iter(video_scripts.items()))
+                    _render_video_angle(label, scripts)
+                else:
+                    # 多个视频角度，按角度分 tab
+                    angle_tabs = st.tabs(list(video_scripts.keys()))
+                    for (label, scripts), atab in zip(video_scripts.items(), angle_tabs):
+                        with atab:
+                            _render_video_angle(label, scripts)
             else:
-                # 多个视频角度，按角度分 tab
-                angle_tabs = st.tabs(list(video_scripts.keys()))
-                for (label, scripts), atab in zip(video_scripts.items(), angle_tabs):
-                    with atab:
-                        _render_video_angle(label, scripts)
-        else:
-            st.warning("暂无视频脚本数据，请重新生成或刷新页面。")
+                st.warning("暂无视频脚本数据，请重新生成或刷新页面。")
 
-    # ---------- 平台发布文案 ----------
-    with st.expander("📝 查看图文选题发布文案"):
-        platform_copies = playbook["平台文案"]
+        # ---------- 平台发布文案 ----------
+        with st.expander("📝 查看图文选题发布文案"):
+            platform_copies = playbook["平台文案"]
 
-        if isinstance(platform_copies, list):
-            _render_legacy_platform_copies(platform_copies)
-        elif isinstance(platform_copies, dict):
-            if len(platform_copies) == 1:
-                label, copies = next(iter(platform_copies.items()))
-                _render_graphic_copies(label, copies)
+            if isinstance(platform_copies, list):
+                _render_legacy_platform_copies(platform_copies)
+            elif isinstance(platform_copies, dict):
+                if len(platform_copies) == 1:
+                    label, copies = next(iter(platform_copies.items()))
+                    _render_graphic_copies(label, copies)
+                else:
+                    angle_tabs = st.tabs(list(platform_copies.keys()))
+                    for (label, copies), atab in zip(platform_copies.items(), angle_tabs):
+                        with atab:
+                            _render_graphic_copies(label, copies)
             else:
-                angle_tabs = st.tabs(list(platform_copies.keys()))
-                for (label, copies), atab in zip(platform_copies.items(), angle_tabs):
-                    with atab:
-                        _render_graphic_copies(label, copies)
-        else:
-            st.warning("暂无平台文案数据，请重新生成或刷新页面。")
+                st.warning("暂无平台文案数据，请重新生成或刷新页面。")
 
-    # ---------- 视觉建议 ----------
-    with st.expander("🎨 查看配图 / 视觉建议"):
-        visual = playbook["视觉建议"]
-        st.markdown(f"- **主视觉风格**：{visual['主视觉风格']}")
-        st.markdown(f"- **推荐配色**：{visual['推荐配色']}")
-        st.markdown("- **画面元素**：")
-        for elem in visual["画面元素"]:
-            st.markdown(f"  - {elem}")
-        st.markdown("- **拍摄/设计建议**：")
-        for tip in visual["拍摄/设计建议"]:
-            st.markdown(f"  - {tip}")
-        st.info("💡 图片生成能力后续可接入 AI 绘图工具；当前先以文字版视觉方案呈现。")
+        # ---------- 视觉建议 ----------
+        with st.expander("🎨 查看配图 / 视觉建议"):
+            visual = playbook["视觉建议"]
+            st.markdown(f"- **主视觉风格**：{visual['主视觉风格']}")
+            st.markdown(f"- **推荐配色**：{visual['推荐配色']}")
+            st.markdown("- **画面元素**：")
+            for elem in visual["画面元素"]:
+                st.markdown(f"  - {elem}")
+            st.markdown("- **拍摄/设计建议**：")
+            for tip in visual["拍摄/设计建议"]:
+                st.markdown(f"  - {tip}")
+            st.info("💡 图片生成能力后续可接入 AI 绘图工具；当前先以文字版视觉方案呈现。")
+    except Exception as e:
+        st.error(f"🐞 DEBUG render_content_playbook 异常：{type(e).__name__}: {e}")
+        import traceback
+        st.code(traceback.format_exc())
 
 
 def _video_scripts_to_markdown(label: str, scripts: list) -> str:
@@ -1264,6 +1270,7 @@ with tab3:
                     st.dataframe(graphic_df, use_container_width=True, hide_index=True)
 
                     # 深度内容演绎：视频脚本 + 平台文案 + 视觉建议
+                    st.write("🐞 DEBUG: about to call render_content_playbook for TOP1")
                     topic_for_playbook = {"topic": topic_text, **labels}
                     render_content_playbook(
                         topic_for_playbook,
